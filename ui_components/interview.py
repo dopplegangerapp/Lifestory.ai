@@ -29,7 +29,7 @@ def create_interview_ui():
             if st.button("Start Interview", use_container_width=True):
                 st.session_state.started = True
                 try:
-                    response = requests.get("http://127.0.0.1:5000/interview/")
+                    response = requests.get("http://0.0.0.0:5000/interview/")
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.current_question = data.get("question", "What's your name?")
@@ -43,7 +43,7 @@ def create_interview_ui():
             if st.button("Continue", use_container_width=True) and answer:
                 try:
                     response = requests.post(
-                        "http://127.0.0.1:5000/interview/",
+                        "http://0.0.0.0:5000/interview/",
                         json={"answer": answer}
                     )
                     if response.status_code == 200:
