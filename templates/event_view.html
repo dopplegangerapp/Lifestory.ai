@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>{{ event.title }}</h1>
+        <div class="actions">
+            <a href="{{ url_for('card_viewer_bp.edit_event', id=event.id) }}" class="button">Edit</a>
+            <a href="{{ url_for('card_viewer_bp.events') }}" class="button">Back to Events</a>
+        </div>
+    </div>
+
+    <div class="event-details">
+        <div class="description">
+            <p>{{ event.description }}</p>
+        </div>
+
+        <div class="dates">
+            <p>Start Date: {{ event.start_date.strftime('%Y-%m-%d') }}</p>
+            {% if event.end_date %}
+            <p>End Date: {{ event.end_date.strftime('%Y-%m-%d') }}</p>
+            {% endif %}
+        </div>
+
+        {% if event.location %}
+        <div class="location">
+            <h2>Location</h2>
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ event.location.name }}</h3>
+                </div>
+                <div class="card-body">
+                    <p>{{ event.location.description }}</p>
+                    <a href="{{ url_for('card_viewer_bp.view_place', id=event.location.id) }}" class="button button-small">View Location</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if event.people %}
+        <div class="people">
+            <h2>People Involved</h2>
+            <div class="grid">
+                {% for person in event.people %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3>{{ person.name }}</h3>
+                        <span class="relationship">{{ person.relationship }}</span>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ person.description }}</p>
+                        <a href="{{ url_for('card_viewer_bp.view_person', id=person.id) }}" class="button button-small">View Person</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if event.memories %}
+        <div class="memories">
+            <h2>Memories</h2>
+            <div class="grid">
+                {% for memory in event.memories %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3>{{ memory.title }}</h3>
+                        <span class="date">{{ memory.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ memory.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .event-details {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .event-details:last-child {
+        border-bottom: none;
+    }
+    
+    .event-details h2 {
+        margin-bottom: 15px;
+        color: #555;
+    }
+    
+    .description {
+        margin-bottom: 30px;
+    }
+    
+    .dates {
+        margin-bottom: 30px;
+    }
+    
+    .location, .people, .memories {
+        margin-bottom: 30px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+    
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background-color: #e3f2fd;
+    }
+    
+    .card-body {
+        padding: 10px;
+    }
+    
+    .relationship {
+        font-style: italic;
+        color: #666;
+    }
+    
+    .date {
+        color: #666;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}People - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="card-container">
+    <div class="card-header">
+        <h1>People</h1>
+        <div class="card-controls">
+            <input type="text" id="search-input" class="search-bar" placeholder="Search people...">
+            <select id="filter-select" class="search-bar">
+                <option value="all">All</option>
+                <option value="family">Family</option>
+                <option value="friend">Friend</option>
+                <option value="colleague">Colleague</option>
+            </select>
+        </div>
+    </div>
+    
+    <div id="card-grid" class="card-grid">
+        {% for person in people %}
+        <div class="card" data-id="{{ person.id }}" data-type="person">
+            <h3>{{ person.name }}</h3>
+            <p>{{ person.description }}</p>
+            {% if person.media %}
+            <img src="{{ person.media }}" alt="{{ person.name }}">
+            {% endif %}
+            <div class="card-footer">
+                <span class="card-type">{{ person.relationship }}</span>
+                <span class="card-date">{{ person.created_at.strftime('%Y-%m-%d') }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

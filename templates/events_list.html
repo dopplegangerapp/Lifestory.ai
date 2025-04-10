@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Events - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>Events</h1>
+        <a href="{{ url_for('card_viewer_bp.add_event') }}" class="button">Add Event</a>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search events...">
+    </div>
+
+    <div class="grid" id="eventsGrid">
+        {% for event in events %}
+        <div class="card" data-title="{{ event.title }}">
+            <div class="card-header">
+                <h3>{{ event.title }}</h3>
+                <span class="date">{{ event.start_date.strftime('%Y-%m-%d') }}</span>
+            </div>
+            <div class="card-body">
+                <p>{{ event.description }}</p>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('card_viewer_bp.view_event', id=event.id) }}" class="button">View</a>
+                <a href="{{ url_for('card_viewer_bp.edit_event', id=event.id) }}" class="button">Edit</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.card');
+    
+    cards.forEach(card => {
+        const title = card.getAttribute('data-title').toLowerCase();
+        if (title.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

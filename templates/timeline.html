@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}Timeline - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="timeline-container">
+    <div class="timeline-controls">
+        <div class="zoom-controls">
+            <button id="zoom-in" class="btn">+</button>
+            <button id="zoom-out" class="btn">-</button>
+            <span id="zoom-level">Decades</span>
+        </div>
+        <div class="filter-controls">
+            <select id="filter-type" class="filter-select">
+                <option value="all">All Events</option>
+                <option value="events">Events Only</option>
+                <option value="memories">Memories Only</option>
+            </select>
+            <input type="text" id="search-events" class="search-bar" placeholder="Search events...">
+        </div>
+    </div>
+
+    <div class="timeline-wrapper">
+        <div class="timeline" id="timeline">
+            <!-- Timeline events will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <div id="event-details" class="event-details">
+        <!-- Event details will be shown here when an event is clicked -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.timeline-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.zoom-controls button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#zoom-level {
+    min-width: 100px;
+    text-align: center;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-select {
+    background-color: #2a2a2a;
+    color: #fff;
+    border: 1px solid #3a3a3a;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.timeline-wrapper {
+    position: relative;
+    height: 500px;
+    overflow-x: auto;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.timeline {
+    position: relative;
+    height: 100%;
+    min-width: 2000px;
+}
+
+.timeline-marker {
+    position: absolute;
+    width: 2px;
+    background-color: #4a90e2;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.timeline-marker:hover {
+    background-color: #357abd;
+    transform: scaleX(1.5);
+}
+
+.timeline-event {
+    position: absolute;
+    background-color: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.timeline-event:hover {
+    background-color: #3a3a3a;
+    transform: translateY(-2px);
+}
+
+.event-details {
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    display: none;
+}
+
+.event-details.active {
+    display: block;
+}
+
+.event-details h3 {
+    margin-top: 0;
+    color: #4a90e2;
+}
+
+.event-details p {
+    margin-bottom: 1rem;
+}
+
+.event-details .event-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    color: #ccc;
+}
+
+.event-details .event-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .timeline-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .filter-controls {
+        width: 100%;
+    }
+    
+    .filter-select {
+        flex: 1;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timeline = document.getElementById('timeline');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomLevel = document.getElementById('zoom-level');
+    const filterType = document.getElementById('filter-type');
+    const searchEvents = document.getElementById('search-events');
+    const eventDetails = document.getElementById('event-details');
+
+    let currentZoom = 1;
+    const zoomLevels = ['Decades', 'Years', 'Months', 'Days'];
+    let currentZoomIndex = 0;
+
+    // Fetch events from the backend
+    async function fetchEvents() {
+        try {
+            const response = await fetch('/api/timeline/events');
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching events:', error);
+            return [];
+        }
+    }
+
+    // Fetch event details from the backend
+    async function fetchEventDetails(id, type) {
+        try {
+            const endpoint = type === 'event' ? 
+                `/api/timeline/event/${id}` : 
+                `/api/timeline/memory/${id}`;
+            const response = await fetch(endpoint);
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching event details:', error);
+            return null;
+        }
+    }
+
+    async function updateTimeline() {
+        timeline.innerHTML = '';
+        const events = await fetchEvents();
+        
+        const filteredEvents = events.filter(event => {
+            const matchesType = filterType.value === 'all' || 
+                              (filterType.value === 'events' && event.type === 'event') ||
+                              (filterType.value === 'memories' && event.type === 'memory');
+            const matchesSearch = event.title.toLowerCase().includes(searchEvents.value.toLowerCase()) ||
+                                event.description.toLowerCase().includes(searchEvents.value.toLowerCase());
+            return matchesType && matchesSearch;
+        });
+
+        filteredEvents.forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'card timeline-event';
+            eventElement.innerHTML = `
+                <h4>${event.title}</h4>
+                <p>${event.date}</p>
+            `;
+            
+            // Position the event on the timeline
+            const date = new Date(event.date);
+            const position = (date.getFullYear() - 2000) * 50; // Simplified positioning
+            eventElement.style.left = `${position}px`;
+            
+            eventElement.addEventListener('click', () => showEventDetails(event));
+            timeline.appendChild(eventElement);
+        });
+    }
+
+    async function showEventDetails(event) {
+        const details = await fetchEventDetails(event.id, event.type);
+        if (!details) return;
+
+        let detailsHtml = `
+            <h3>${details.title}</h3>
+            <div class="event-meta">
+                <span>Date: ${details.date || details.start_date}</span>
+                <span>Type: ${event.type}</span>
+            </div>
+            <p>${details.description}</p>
+        `;
+
+        if (details.people && details.people.length > 0) {
+            detailsHtml += `
+                <div class="event-people">
+                    <h4>People</h4>
+                    <ul>
+                        ${details.people.map(person => `
+                            <li>${person.name} (${person.relationship})</li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        if (details.media && details.media.length > 0) {
+            detailsHtml += `
+                <div class="event-media">
+                    <h4>Media</h4>
+                    <div class="media-grid">
+                        ${details.media.map(media => `
+                            <div class="media-item">
+                                <img src="${media.file_path}" alt="${media.description}">
+                                <p>${media.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        detailsHtml += `
+            <div class="event-actions">
+                <button class="btn">Edit</button>
+                <button class="btn">Delete</button>
+            </div>
+        `;
+
+        eventDetails.innerHTML = detailsHtml;
+        eventDetails.style.display = 'block';
+    }
+
+    function updateZoom() {
+        zoomLevel.textContent = zoomLevels[currentZoomIndex];
+        timeline.style.transform = `scaleX(${currentZoom})`;
+    }
+
+    zoomInBtn.addEventListener('click', () => {
+        if (currentZoomIndex < zoomLevels.length - 1) {
+            currentZoomIndex++;
+            currentZoom *= 2;
+            updateZoom();
+            updateTimeline();
+        }
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+        if (currentZoomIndex > 0) {
+            currentZoomIndex--;
+            currentZoom /= 2;
+            updateZoom();
+            updateTimeline();
+        }
+    });
+
+    filterType.addEventListener('change', updateTimeline);
+    searchEvents.addEventListener('input', updateTimeline);
+
+    // Initial timeline update
+    updateTimeline();
+    updateZoom();
+});
+</script>
+{% endblock %} 

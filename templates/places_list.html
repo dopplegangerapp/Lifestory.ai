@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Places - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>Places</h1>
+        <a href="{{ url_for('card_viewer_bp.add_place') }}" class="button">Add Place</a>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search places...">
+    </div>
+
+    <div class="grid" id="placesGrid">
+        {% for place in places %}
+        <div class="card" data-title="{{ place.name }}">
+            <div class="card-header">
+                <h3>{{ place.name }}</h3>
+                <span class="coordinates">{{ place.latitude }}, {{ place.longitude }}</span>
+            </div>
+            <div class="card-body">
+                <p>{{ place.description }}</p>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('card_viewer_bp.view_place', id=place.id) }}" class="button">View</a>
+                <a href="{{ url_for('card_viewer_bp.edit_place', id=place.id) }}" class="button">Edit</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.card');
+    
+    cards.forEach(card => {
+        const title = card.getAttribute('data-title').toLowerCase();
+        if (title.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

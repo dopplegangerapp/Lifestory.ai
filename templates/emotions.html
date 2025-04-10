@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Emotions - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="card-container">
+    <div class="card-header">
+        <h1>Emotions</h1>
+        <div class="card-controls">
+            <input type="text" id="search-input" class="search-bar" placeholder="Search emotions...">
+            <select id="filter-select" class="search-bar">
+                <option value="all">All</option>
+                <option value="joy">Joy</option>
+                <option value="sadness">Sadness</option>
+                <option value="anger">Anger</option>
+                <option value="fear">Fear</option>
+                <option value="love">Love</option>
+            </select>
+        </div>
+    </div>
+    
+    <div id="card-grid" class="card-grid">
+        {% for emotion in emotions %}
+        <div class="card" data-id="{{ emotion.id }}" data-type="emotion">
+            <h3>{{ emotion.title }}</h3>
+            <p>{{ emotion.description }}</p>
+            {% if emotion.media %}
+            <img src="{{ emotion.media }}" alt="{{ emotion.title }}">
+            {% endif %}
+            <div class="card-footer">
+                <span class="card-type">{{ emotion.type }}</span>
+                <span class="card-date">{{ emotion.created_at.strftime('%Y-%m-%d') }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

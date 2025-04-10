@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DROE Core App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="{{ url_for('index') }}">DROE</a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('interview.get_question') }}">Interview</a></li>
+                <li><a href="{{ url_for('timeline.timeline') }}">Timeline</a></li>
+                <li><a href="{{ url_for('card_viewer_bp.people') }}">People</a></li>
+                <li><a href="{{ url_for('card_viewer_bp.places') }}">Places</a></li>
+                <li><a href="{{ url_for('card_viewer_bp.events') }}">Events</a></li>
+                <li><a href="{{ url_for('card_viewer_bp.emotions') }}">Emotions</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 DROE Core App. All rights reserved.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% if request.endpoint and 'interview' in request.endpoint %}
+        <script src="{{ url_for('static', filename='js/interview.js') }}"></script>
+    {% elif request.endpoint and 'timeline' in request.endpoint %}
+        <script src="{{ url_for('static', filename='js/timeline.js') }}"></script>
+    {% elif request.endpoint and 'card_viewer_bp' in request.endpoint %}
+        <script src="{{ url_for('static', filename='js/card_viewer.js') }}"></script>
+    {% endif %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

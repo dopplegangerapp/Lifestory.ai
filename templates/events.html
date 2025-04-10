@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Events - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="card-container">
+    <div class="card-header">
+        <h1>Events</h1>
+        <div class="card-controls">
+            <input type="text" id="search-input" class="search-bar" placeholder="Search events...">
+            <select id="filter-select" class="search-bar">
+                <option value="all">All</option>
+                <option value="milestone">Milestone</option>
+                <option value="celebration">Celebration</option>
+                <option value="achievement">Achievement</option>
+                <option value="memory">Memory</option>
+            </select>
+        </div>
+    </div>
+    
+    <div id="card-grid" class="card-grid">
+        {% for event in events %}
+        <div class="card" data-id="{{ event.id }}" data-type="event">
+            <h3>{{ event.title }}</h3>
+            <p>{{ event.description }}</p>
+            {% if event.media %}
+            <img src="{{ event.media }}" alt="{{ event.title }}">
+            {% endif %}
+            <div class="card-footer">
+                <span class="card-type">{{ event.type }}</span>
+                <span class="card-date">{{ event.date.strftime('%Y-%m-%d') }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

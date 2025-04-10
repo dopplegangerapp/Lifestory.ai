@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Emotions - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>Emotions</h1>
+        <a href="{{ url_for('card_viewer_bp.add_emotion') }}" class="button">Add Emotion</a>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search emotions...">
+    </div>
+
+    <div class="grid" id="emotionsGrid">
+        {% for emotion in emotions %}
+        <div class="card" data-title="{{ emotion.title }}">
+            <div class="card-header">
+                <h3>{{ emotion.title }}</h3>
+                <span class="type">{{ emotion.type }}</span>
+            </div>
+            <div class="card-body">
+                <p>{{ emotion.description }}</p>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('card_viewer_bp.view_emotion', id=emotion.id) }}" class="button">View</a>
+                <a href="{{ url_for('card_viewer_bp.edit_emotion', id=emotion.id) }}" class="button">Edit</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.card');
+    
+    cards.forEach(card => {
+        const title = card.getAttribute('data-title').toLowerCase();
+        if (title.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

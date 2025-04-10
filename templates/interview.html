@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Interview - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="interview-container">
+    <div class="interview-header">
+        <div class="orb"></div>
+        <h1>Your Life Story Interview</h1>
+        <div class="progress-indicator">
+            <div class="stage-progress">
+                <span class="current-stage">Foundations</span>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+            <div class="story-arcs">
+                <span class="arc love" title="Love Story">❤️</span>
+                <span class="arc conflict" title="Conflict">⚔️</span>
+                <span class="arc triumph" title="Triumph">🏆</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="interview-content">
+        <div class="question-card">
+            <h2 class="question-text">Ready to begin your life story interview?</h2>
+            <p class="question-hint">Click "Start Interview" to begin sharing your memories.</p>
+        </div>
+
+        <div class="answer-section">
+            <textarea id="answer-input" placeholder="Type your answer here..." rows="6"></textarea>
+            <div class="answer-controls">
+                <button id="start-btn" class="button">Start Interview</button>
+                <button id="submit-btn" class="button" style="display: none;">Submit Answer</button>
+                <button id="skip-btn" class="button-secondary" style="display: none;">Skip Question</button>
+            </div>
+        </div>
+
+        <div id="follow-up-questions" class="follow-up-questions" style="display: none;">
+            <!-- Follow-up questions will be displayed here -->
+        </div>
+    </div>
+
+    <div class="interview-tips">
+        <h3>Tips for Great Answers</h3>
+        <ul>
+            <li>Be as detailed as possible</li>
+            <li>Share your feelings and emotions</li>
+            <li>Include specific dates and locations when you remember them</li>
+            <li>Mention people who were important in these moments</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .interview-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .interview-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .orb {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 2rem auto;
+        border-radius: 50%;
+        background: radial-gradient(circle, #448aff, #1a237e);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.7; }
+    }
+
+    .progress-indicator {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+
+    .stage-progress {
+        flex: 1;
+        margin-right: 2rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: #2a2a2a;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #448aff;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .story-arcs {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .story-arcs .arc {
+        font-size: 1.5rem;
+        opacity: 0.3;
+        transition: opacity 0.3s ease;
+    }
+
+    .story-arcs .arc.active {
+        opacity: 1;
+    }
+
+    .question-card {
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .question-text {
+        color: #90caf9;
+        margin-bottom: 1rem;
+    }
+
+    .question-hint {
+        color: #ccc;
+        font-style: italic;
+    }
+
+    .answer-section {
+        margin-bottom: 2rem;
+    }
+
+    #answer-input {
+        width: 100%;
+        padding: 1rem;
+        border: 1px solid #3a3a3a;
+        border-radius: 4px;
+        background: #2a2a2a;
+        color: #fff;
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        resize: vertical;
+    }
+
+    .answer-controls {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .follow-up-questions {
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .follow-up-questions h3 {
+        color: #90caf9;
+        margin-bottom: 1rem;
+    }
+
+    .follow-up-questions ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .follow-up-questions li {
+        color: #ccc;
+        margin-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .follow-up-questions li:before {
+        content: "•";
+        color: #448aff;
+        position: absolute;
+        left: 0;
+    }
+
+    .interview-tips {
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .interview-tips h3 {
+        color: #90caf9;
+        margin-bottom: 1rem;
+    }
+
+    .interview-tips ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .interview-tips li {
+        color: #ccc;
+        margin-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .interview-tips li:before {
+        content: "•";
+        color: #448aff;
+        position: absolute;
+        left: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const INTERVIEW_STAGES = {
+        'foundations': {
+            'name': 'Foundations',
+            'next': 'childhood',
+            'questions': [
+                "What's your full name and when were you born?",
+                "Where were you born and where did you grow up?",
+                "Tell me about your parents and siblings.",
+                "What are your earliest memories?"
+            ]
+        },
+        'childhood': {
+            'name': 'Childhood',
+            'next': 'teens',
+            'questions': [
+                "What was your childhood home like?",
+                "What were your favorite activities as a child?",
+                "Who were your closest friends growing up?",
+                "What were your favorite subjects in school?"
+            ]
+        },
+        'teens': {
+            'name': 'Teen Years',
+            'next': 'twenties',
+            'questions': [
+                "What were your teenage years like?",
+                "What were your dreams and aspirations?",
+                "What challenges did you face during this time?",
+                "How did your relationships with family and friends evolve?"
+            ]
+        },
+        'twenties': {
+            'name': 'Twenties',
+            'next': 'thirties',
+            'questions': [
+                "What did you do after high school?",
+                "What were your first jobs or career steps?",
+                "What significant relationships formed during this time?",
+                "What major life decisions did you make?"
+            ]
+        }
+    };
+
+    let currentStage = 'foundations';
+    let currentQuestionIndex = 0;
+    let storyArcs = {
+        love: false,
+        conflict: false,
+        triumph: false
+    };
+
+    const startBtn = document.getElementById('start-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    const answerInput = document.getElementById('answer-input');
+    const questionText = document.querySelector('.question-text');
+    const questionHint = document.querySelector('.question-hint');
+    const progressFill = document.querySelector('.progress-fill');
+    const currentStageSpan = document.querySelector('.current-stage');
+
+    function updateProgress() {
+        const totalStages = Object.keys(INTERVIEW_STAGES).length;
+        const currentStageIndex = Object.keys(INTERVIEW_STAGES).indexOf(currentStage);
+        const progress = ((currentStageIndex * 100) / totalStages) + 
+                        ((currentQuestionIndex * 100) / (INTERVIEW_STAGES[currentStage].questions.length * totalStages));
+        progressFill.style.width = `${progress}%`;
+    }
+
+    function updateStoryArcs() {
+        document.querySelectorAll('.story-arcs .arc').forEach(arc => {
+            const type = arc.classList[1];
+            arc.classList.toggle('active', storyArcs[type]);
+        });
+    }
+
+    startBtn.addEventListener('click', async () => {
+        const response = await fetch('/api/interview/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        
+        questionText.textContent = data.question;
+        questionHint.textContent = "Take your time to answer thoughtfully.";
+        startBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+        skipBtn.style.display = 'block';
+        answerInput.focus();
+    });
+
+    submitBtn.addEventListener('click', async () => {
+        const answer = answerInput.value.trim();
+        if (!answer) {
+            alert('Please provide an answer before submitting.');
+            return;
+        }
+
+        const response = await fetch('/api/interview/answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ answer })
+        });
+        const data = await response.json();
+        
+        questionText.textContent = data.question;
+        currentStage = data.stage.toLowerCase();
+        currentQuestionIndex = data.question_index;
+        storyArcs = data.story_arcs;
+        
+        answerInput.value = '';
+        currentStageSpan.textContent = INTERVIEW_STAGES[currentStage].name;
+        updateProgress();
+        updateStoryArcs();
+    });
+
+    skipBtn.addEventListener('click', async () => {
+        const response = await fetch('/api/interview/answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ answer: '[SKIPPED]' })
+        });
+        const data = await response.json();
+        
+        questionText.textContent = data.question;
+        currentStage = data.stage.toLowerCase();
+        currentQuestionIndex = data.question_index;
+        storyArcs = data.story_arcs;
+        
+        answerInput.value = '';
+        currentStageSpan.textContent = INTERVIEW_STAGES[currentStage].name;
+        updateProgress();
+        updateStoryArcs();
+    });
+</script>
+{% endblock %} 

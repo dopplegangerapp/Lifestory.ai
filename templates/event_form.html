@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{% if event %}Edit{% else %}Add{% endif %} Event - DROE Core App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>{% if event %}Edit{% else %}Add{% endif %} Event</h1>
+    </div>
+
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" value="{{ event.title if event else '' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description">{{ event.description if event else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="start_date">Start Date</label>
+            <input type="date" id="start_date" name="start_date" value="{{ event.start_date.strftime('%Y-%m-%d') if event else '' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="end_date">End Date (Optional)</label>
+            <input type="date" id="end_date" name="end_date" value="{{ event.end_date.strftime('%Y-%m-%d') if event and event.end_date else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="location_id">Location (Optional)</label>
+            <select id="location_id" name="location_id">
+                <option value="">Select a location</option>
+                {% for place in places %}
+                <option value="{{ place.id }}" {% if event and event.location_id == place.id %}selected{% endif %}>
+                    {{ place.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>People Involved (Optional)</label>
+            <div class="checkbox-group">
+                {% for person in people %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="people_ids" value="{{ person.id }}"
+                           {% if event and person.id in event.people_ids %}checked{% endif %}>
+                    {{ person.name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="button">{% if event %}Update{% else %}Add{% endif %} Event</button>
+            <a href="{{ url_for('card_viewer_bp.events') }}" class="button button-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 5px;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        width: auto;
+        margin-right: 8px;
+    }
+    
+    .checkbox-item label {
+        margin-bottom: 0;
+        font-weight: normal;
+    }
+</style>
+{% endblock %} 
