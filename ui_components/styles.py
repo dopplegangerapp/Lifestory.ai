@@ -13,7 +13,7 @@ def add_custom_styles():
                 height: 100vh;
                 overflow: hidden;
             }
-            
+
             /* Main Container */
             .stApp {
                 background: #000;
@@ -35,7 +35,7 @@ def add_custom_styles():
             [data-testid="stForm"] {
                 padding: 0.5rem !important;
             }
-            
+
             /* Header */
             .header {
                 text-align: center;
@@ -59,23 +59,45 @@ def add_custom_styles():
 
             /* Ensure content fits screen */
             .main .block-container {
-                padding: 0.5rem;
-                max-width: 100%;
+                padding: 1rem;
+                max-width: 800px;
                 width: 100%;
                 margin: 0 auto;
             }
 
-            /* Remove orb */
+            /* Remove background orb */
             .droe-orb, .droe-orb-container {
                 display: none !important;
             }
 
             /* Interview specific styles */
-            .stTextArea textarea {
-                min-height: 100px !important;
-                font-size: 1rem !important;
-                padding: 0.5rem !important;
-                margin: 0.5rem 0 !important;
+            .stTextArea {
+                min-height: 100px;
+                margin: 1rem 0;
+            }
+
+            .stTextArea > div {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 4px;
+            }
+
+            .stButton > button {
+                margin: 1rem 0;
+                padding: 0.75rem;
+                width: 100%;
+                max-width: 300px;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            /* Progress bar styling */
+            .stProgress > div {
+                height: 8px;
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .stProgress > div > div {
+                background-color: #4a90e2;
             }
 
             /* Center content */
@@ -107,7 +129,7 @@ def add_custom_styles():
                 gap: 0.5rem;
                 padding: 0;
             }
-            
+
             .block-container {
                 padding: 0 !important;
             }
@@ -124,7 +146,7 @@ def add_custom_styles():
                     letter-spacing: 2px;
                 }
             }
-            
+
             /* Orb */
             .droe-orb {
                 width: 350px;
@@ -172,13 +194,13 @@ def add_custom_styles():
                 text-transform: uppercase;
                 transition: all 0.3s ease;
             }
-            
+
             .stButton > button:hover {
                 background: #007bff;
                 color: #000;
                 transform: translateY(-4px);
             }
-            
+
             /* Footer */
             .footer {
                 position: fixed;
@@ -212,14 +234,14 @@ def add_global_styles():
                 --button-text: #ffffff;
                 --button-shadow: rgba(74, 144, 226, 0.3);
             }
-            
+
             /* Base styles - Mobile First */
             .stApp {
                 background: var(--background-dark);
                 color: var(--text-light);
                 padding: 1rem;
             }
-            
+
             /* Mobile Navigation */
             .nav-button {
                 display: block;
@@ -238,13 +260,13 @@ def add_global_styles():
                 text-transform: uppercase;
                 letter-spacing: 1px;
             }
-            
+
             .nav-button:hover {
                 background: var(--button-hover);
                 transform: translateX(5px);
                 box-shadow: 0 6px 12px var(--button-shadow);
             }
-            
+
             /* Mobile Cards */
             .card {
                 background: var(--card-bg);
@@ -258,13 +280,13 @@ def add_global_styles():
                 width: 100%;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             }
-            
+
             .card:hover {
                 transform: translateY(-5px);
                 border-color: var(--primary-glow);
                 box-shadow: 0 8px 15px var(--button-shadow);
             }
-            
+
             .card-button {
                 display: block;
                 padding: 1rem;
@@ -281,125 +303,125 @@ def add_global_styles():
                 letter-spacing: 1px;
                 box-shadow: 0 4px 6px var(--button-shadow);
             }
-            
+
             .card-button:hover {
                 background: var(--button-hover);
                 transform: scale(1.02);
                 box-shadow: 0 6px 12px var(--button-shadow);
             }
-            
+
             /* Mobile Welcome Page */
             .welcome-container {
                 width: 100%;
                 padding: 1rem;
             }
-            
+
             .welcome-title {
                 text-align: center;
                 margin-bottom: 2rem;
                 color: var(--text-light);
                 font-size: 2rem;
             }
-            
+
             .feature-cards {
                 display: flex;
                 flex-direction: column;
                 gap: 1rem;
                 margin-top: 1rem;
             }
-            
+
             /* Mobile Cards Page */
             .cards-container {
                 width: 100%;
                 padding: 1rem;
             }
-            
+
             .cards-grid {
                 display: grid;
                 grid-template-columns: 1fr;
                 gap: 1rem;
                 margin-top: 1rem;
             }
-            
+
             /* Mobile Sidebar */
             .stSidebar {
                 width: 100%;
                 padding: 1rem;
                 background: var(--background-dark);
             }
-            
+
             .droe-orb-container {
                 display: flex;
                 justify-content: center;
                 margin-bottom: 1rem;
             }
-            
+
             /* Responsive Design - Tablet */
             @media (min-width: 768px) {
                 .stApp {
                     padding: 2rem;
                 }
-                
+
                 .feature-cards {
                     grid-template-columns: repeat(2, 1fr);
                 }
-                
+
                 .cards-grid {
                     grid-template-columns: repeat(2, 1fr);
                 }
-                
+
                 .stSidebar {
                     width: 300px;
                 }
             }
-            
+
             /* Responsive Design - Desktop */
             @media (min-width: 1024px) {
                 .feature-cards {
                     grid-template-columns: repeat(3, 1fr);
                 }
-                
+
                 .cards-grid {
                     grid-template-columns: repeat(3, 1fr);
                 }
-                
+
                 .welcome-container,
                 .cards-container {
                     max-width: 1200px;
                     margin: 0 auto;
                 }
             }
-            
+
             /* Mobile Scrollbar */
             ::-webkit-scrollbar {
                 width: 6px;
             }
-            
+
             ::-webkit-scrollbar-track {
                 background: var(--background-dark);
             }
-            
+
             ::-webkit-scrollbar-thumb {
                 background: var(--primary-glow);
                 border-radius: 3px;
             }
-            
+
             ::-webkit-scrollbar-thumb:hover {
                 background: var(--secondary-glow);
             }
-            
+
             /* Mobile Touch Targets */
             button, a, input, textarea {
                 min-height: 44px;
                 min-width: 44px;
             }
-            
+
             /* Mobile Typography */
             h1 { font-size: 2rem; }
             h2 { font-size: 1.75rem; }
             h3 { font-size: 1.5rem; }
             p { font-size: 1rem; }
-            
+
             /* Mobile Spacing */
             .spacing-sm { margin: 0.5rem 0; }
             .spacing-md { margin: 1rem 0; }
@@ -547,4 +569,4 @@ def add_typing_animation():
                 50% { border-color: var(--primary-glow) }
             }
         </style>
-    """, unsafe_allow_html=True) 
+    """, unsafe_allow_html=True)
