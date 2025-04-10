@@ -1,1 +1,8 @@
-run = "python3 main.py"
+run = "streamlit run main.py, api.py, app.py"
+modules = ["python-3.12", "web", "nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "streamlit run app.py"]
