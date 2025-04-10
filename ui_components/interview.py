@@ -23,13 +23,11 @@ def create_interview_ui():
 
     # Create a clean, minimal container
     with st.container():
-        st.markdown("<h2 style='text-align: center; margin-bottom: 1rem;'>Your Life Story</h2>", unsafe_allow_html=True)
-
         # Progress bar
         st.progress(st.session_state.progress)
 
         # Current question display
-        st.markdown(f"<h3 style='text-align: center; margin: 1rem 0;'>{st.session_state.current_question}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; margin: 0.5rem 0;'>{st.session_state.current_question}</div>", unsafe_allow_html=True)
 
         # Input section
         if not st.session_state.started:
