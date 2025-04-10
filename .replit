@@ -8,7 +8,7 @@ channel = "stable-24_05"
 run = ["sh", "-c", "streamlit run app.py"]
 
 [workflows]
-runButton = "Run"
+runButton = "Run Services"
 
 [[workflows.workflow]]
 name = "Run"
@@ -18,6 +18,23 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "streamlit run app.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python api.py"
+
+[[workflows.workflow]]
+name = "Run Services"
+author = 40783381
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
