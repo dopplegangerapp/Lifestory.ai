@@ -96,9 +96,9 @@ def create_interview_ui():
             answer = st.text_area("Your answer:", height=150, key="answer_input")
             
             if st.button("Continue", use_container_width=True):
-            if answer:
-                try:
-                    response = requests.post(
+                if answer:
+                    try:
+                        response = requests.post(
                         f"{st.session_state.backend_url}/interview",
                         json={"answer": answer}
                     )
