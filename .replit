@@ -8,7 +8,7 @@ channel = "stable-24_05"
 run = ["sh", "-c", "streamlit run app.py"]
 
 [workflows]
-runButton = "Run All Services"
+runButton = "Run Full Stack"
 
 [[workflows.workflow]]
 name = "Run"
@@ -42,6 +42,23 @@ args = "python api.py"
 
 [[workflows.workflow]]
 name = "Run All Services"
+author = 40783381
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python api.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.address 0.0.0.0 --server.headless true"
+
+[[workflows.workflow]]
+name = "Run Full Stack"
 author = 40783381
 mode = "parallel"
 
