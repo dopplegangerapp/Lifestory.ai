@@ -33,16 +33,29 @@ def create_interview_ui():
         if not st.session_state.started:
             if st.button("Start Interview", use_container_width=True):
                 st.session_state.started = True
-                st.rerun()
+                try:
+                    response = requests.get(f"{st.session_state.backend_url}/interview")
+                    data = response.json()
+                    st.session_state.current_question = data.get("question", "What's your name?")
+                    st.session_state.stage = data.get("current_stage", "welcome")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error starting interview: {str(e)}")
         else:
             answer = st.text_area("Your answer:", key="answer_input", height=100, max_chars=1000)
             if st.button("Continue", use_container_width=True) and answer:
-                # Process answer and update progress
-                st.session_state.answers.append(answer)
-                st.session_state.progress += 0.2
-                if st.session_state.progress >= 1.0:
-                    st.session_state.progress = 1.0
-                st.rerun()
+                try:
+                    response = requests.post(
+                        f"{st.session_state.backend_url}/interview",
+                        json={"answer": answer}
+                    )
+                    data = response.json()
+                    st.session_state.current_question = data.get("next_question", "Thank you for sharing!")
+                    st.session_state.stage = data.get("current_stage", "complete")
+                    st.session_state.progress = data.get("progress", 100)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
     # This section is removed as the logic is handled within the container above.
     #The following code is removed because the functionality is integrated into the main container above.
