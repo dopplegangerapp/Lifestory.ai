@@ -59,12 +59,40 @@ def add_custom_styles():
 
             /* Ensure content fits screen */
             .main .block-container {
-                padding: 1rem;
+                padding: 0.5rem;
                 max-width: 100%;
                 width: 100%;
+                margin: 0 auto;
+            }
+
+            /* Remove orb */
+            .droe-orb, .droe-orb-container {
+                display: none !important;
             }
 
             /* Interview specific styles */
+            .stTextArea textarea {
+                min-height: 100px !important;
+                font-size: 1rem !important;
+                padding: 0.5rem !important;
+                margin: 0.5rem 0 !important;
+            }
+
+            /* Center content */
+            [data-testid="column"] {
+                padding: 0 !important;
+            }
+
+            [data-testid="stVerticalBlock"] {
+                gap: 0.5rem !important;
+                padding: 0 !important;
+            }
+
+            /* Better button styles */
+            .stButton > button {
+                margin: 0.5rem 0 !important;
+                padding: 0.5rem 1rem !important;
+            }
             .stTextArea {
                 min-height: 100px;
                 margin: 1rem 0;
