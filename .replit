@@ -39,3 +39,7 @@ args = "python main.py"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python api.py"
+
+[[ports]]
+localPort = 8501
+externalPort = 80
