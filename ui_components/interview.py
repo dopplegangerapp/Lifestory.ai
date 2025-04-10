@@ -21,6 +21,10 @@ def create_interview_ui():
         st.session_state.current_stage = "foundations"
         st.session_state.progress = 0
 
+    # Initialize session state
+    if 'backend_url' not in st.session_state:
+        st.session_state.backend_url = "http://0.0.0.0:5000"
+    
     # Create a clean, minimal container
     with st.container():
         # Progress bar
@@ -38,24 +42,29 @@ def create_interview_ui():
                     data = response.json()
                     st.session_state.current_question = data.get("question", "What's your name?")
                     st.session_state.stage = data.get("current_stage", "welcome")
+                    st.session_state.progress = 0
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Error starting interview: {str(e)}")
+                    st.error(f"Error connecting to backend: {str(e)}")
         else:
             answer = st.text_area("Your answer:", key="answer_input", height=100, max_chars=1000)
             if st.button("Continue", use_container_width=True) and answer:
                 try:
                     response = requests.post(
                         f"{st.session_state.backend_url}/interview",
-                        json={"answer": answer}
+                        json={"answer": answer, "stage": st.session_state.stage}
                     )
-                    data = response.json()
-                    st.session_state.current_question = data.get("next_question", "Thank you for sharing!")
-                    st.session_state.stage = data.get("current_stage", "complete")
-                    st.session_state.progress = data.get("progress", 100)
-                    st.rerun()
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.session_state.current_question = data.get("question", "Thank you for sharing!")
+                        st.session_state.stage = data.get("current_stage", st.session_state.stage)
+                        st.session_state.progress = data.get("progress", st.session_state.progress + 0.1)
+                        st.session_state.answers.append(answer)
+                        st.rerun()
+                    else:
+                        st.error("Failed to submit answer. Please try again.")
                 except Exception as e:
-                    st.error(f"Error: {str(e)}")
+                    st.error(f"Connection error: {str(e)}")
 
     # This section is removed as the logic is handled within the container above.
     #The following code is removed because the functionality is integrated into the main container above.
