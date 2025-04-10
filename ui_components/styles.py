@@ -19,10 +19,21 @@ def add_custom_styles():
                 background: #000;
                 min-height: 100vh;
                 position: relative;
-                padding: 1rem;
+                padding: 0.5rem;
                 margin: 0;
                 display: flex;
                 flex-direction: column;
+                justify-content: flex-start;
+                overflow-y: auto;
+            }
+
+            /* Adjust content for interview mode */
+            [data-testid="stVerticalBlock"] {
+                gap: 0.5rem !important;
+            }
+
+            [data-testid="stForm"] {
+                padding: 0.5rem !important;
             }
             
             /* Header */

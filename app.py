@@ -32,20 +32,21 @@ def main():
         <div class="header">Lifestory.ai</div>
     """, unsafe_allow_html=True)
 
-    # Create button container with native Streamlit buttons
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("INTERVIEW", key="interview_btn"):
-            st.session_state.page = "interview"
-            st.rerun()
-    with col2:
-        if st.button("TIMELINE", key="timeline_btn"):
-            st.session_state.page = "timeline"
-            st.rerun()
-    with col3:
-        if st.button("CARDS", key="cards_btn"):
-            st.session_state.page = "cards"
-            st.rerun()
+    # Show buttons only when not in interview mode
+    if st.session_state.page != "interview":
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("INTERVIEW", key="interview_btn"):
+                st.session_state.page = "interview"
+                st.rerun()
+        with col2:
+            if st.button("TIMELINE", key="timeline_btn"):
+                st.session_state.page = "timeline"
+                st.rerun()
+        with col3:
+            if st.button("CARDS", key="cards_btn"):
+                st.session_state.page = "cards"
+                st.rerun()
 
     st.markdown("""<div class="footer">Copyright 2025 ReaL KeeD</div>""", unsafe_allow_html=True)
 
