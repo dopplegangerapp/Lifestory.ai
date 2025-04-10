@@ -30,7 +30,6 @@ def main():
     # Create layout
     st.markdown("""
         <div class="header">Lifestory.ai</div>
-        <div class="droe-orb"></div>
     """, unsafe_allow_html=True)
 
     # Create button container with native Streamlit buttons

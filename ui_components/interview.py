@@ -17,14 +17,9 @@ def create_interview_ui():
     if 'started' not in st.session_state:
         st.session_state.started = False
 
-    # Create the orb animation
+    # Create minimal layout
     st.markdown("""
-        <div style="text-align: center; margin: 2rem;">
-            <div style="width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; 
-                 background: radial-gradient(circle, #448aff, #1a237e);
-                 animation: pulse 2s infinite;">
-            </div>
-        </div>
+        <div style="text-align: center;">
         <style>
             @keyframes pulse {
                 0% { transform: scale(1); opacity: 0.7; }

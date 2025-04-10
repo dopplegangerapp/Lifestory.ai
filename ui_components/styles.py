@@ -17,27 +17,48 @@ def add_custom_styles():
             /* Main Container */
             .stApp {
                 background: #000;
-                height: 100vh;
+                min-height: 100vh;
                 position: relative;
-                padding: 0;
+                padding: 1rem;
                 margin: 0;
+                display: flex;
+                flex-direction: column;
             }
             
             /* Header */
             .header {
-                position: fixed;
-                top: 10%;
-                left: 0;
-                right: 0;
                 text-align: center;
                 color: #007bff;
-                font-size: 3rem;
+                font-size: 2rem;
                 font-weight: bold;
-                letter-spacing: 6px;
+                letter-spacing: 4px;
                 text-transform: uppercase;
-                z-index: 2;
-                margin: 0;
+                margin: 1rem 0;
                 padding: 0;
+            }
+
+            /* Content Containers */
+            .stButton {
+                margin: 0.5rem 0;
+            }
+
+            .element-container {
+                margin: 0.5rem 0;
+            }
+
+            /* Ensure content fits screen */
+            .main .block-container {
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+                max-width: 100%;
+            }
+
+            /* Responsive text */
+            @media (max-width: 768px) {
+                .header {
+                    font-size: 1.5rem;
+                    letter-spacing: 2px;
+                }
             }
             
             /* Orb */
