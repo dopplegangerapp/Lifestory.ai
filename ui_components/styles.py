@@ -59,9 +59,34 @@ def add_custom_styles():
 
             /* Ensure content fits screen */
             .main .block-container {
-                padding-top: 1rem;
-                padding-bottom: 1rem;
+                padding: 1rem;
                 max-width: 100%;
+                width: 100%;
+            }
+
+            /* Interview specific styles */
+            .stTextArea {
+                min-height: 100px;
+                margin: 1rem 0;
+            }
+
+            .stProgress {
+                margin: 1rem 0;
+            }
+
+            /* Container adjustments */
+            [data-testid="stVerticalBlock"] {
+                gap: 0.5rem;
+                padding: 0;
+            }
+            
+            .block-container {
+                padding: 0 !important;
+            }
+
+            /* Header adjustments */
+            h1, h2, h3 {
+                margin: 0.5rem 0;
             }
 
             /* Responsive text */

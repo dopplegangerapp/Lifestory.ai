@@ -3,11 +3,10 @@ import requests
 
 def create_interview_ui():
     """Create an engaging and supportive interview UI."""
-    st.title("Your Life Story Interview")
-
+    
     # Initialize session state for interview if not exists
     if 'backend_url' not in st.session_state:
-        st.session_state.backend_url = "http://localhost:5000"
+        st.session_state.backend_url = "http://0.0.0.0:5000"
     if 'current_question' not in st.session_state:
         st.session_state.current_question = "Ready to begin your life story interview?"
     if 'stage' not in st.session_state:
@@ -16,6 +15,12 @@ def create_interview_ui():
         st.session_state.progress = 0
     if 'started' not in st.session_state:
         st.session_state.started = False
+    if 'answers' not in st.session_state:
+        st.session_state.answers = []
+
+    # Create a clean, minimal container
+    with st.container():
+        st.markdown("<h2 style='text-align: center; margin-bottom: 2rem;'>Your Life Story</h2>", unsafe_allow_html=True)
 
     # Create minimal layout
     st.markdown("""

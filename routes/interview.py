@@ -186,11 +186,13 @@ def get_question():
     if stage.completed:
         return jsonify({
             "question": "Thank you for sharing your story! Your life journey has been documented.",
-            "completed": True
+            "completed": True,
+            "current_stage": stage.current_stage,
+            "progress": 100
         })
     
     current_stage_questions = INTERVIEW_QUESTIONS.get(stage.current_stage, [])
-    if not current_stage_questions or stage.current_question_index >= len(current_stage_questions):
+    if stage.current_question_index >= len(current_stage_questions):
         # Move to next stage
         stages = list(INTERVIEW_QUESTIONS.keys())
         current_stage_index = stages.index(stage.current_stage)
