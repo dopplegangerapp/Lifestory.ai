@@ -1,8 +1,8 @@
 import streamlit as st
 import os
-# Interview UI is handled by Flask templates
 from ui_components.styles import add_custom_styles
 from ui_components.timeline import create_timeline_ui
+from ui_components.interview import create_interview_ui
 
 # Set environment variable to skip email prompt
 os.environ['STREAMLIT_SERVER_EMAIL'] = ''
