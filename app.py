@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from ui_components.interview import create_interview_ui
+# Interview UI is handled by Flask templates
 from ui_components.styles import add_custom_styles
 from ui_components.timeline import create_timeline_ui
 
