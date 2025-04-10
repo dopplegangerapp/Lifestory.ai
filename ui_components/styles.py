@@ -59,7 +59,7 @@ def add_custom_styles():
 
             /* Ensure content fits screen */
             .main .block-container {
-                padding: 1rem;
+                padding: 0.5rem;
                 max-width: 800px;
                 width: 100%;
                 margin: 0 auto;
@@ -214,6 +214,20 @@ def add_custom_styles():
                 letter-spacing: 1px;
                 text-transform: uppercase;
                 z-index: 2;
+            }
+
+            /* Adjust text area */
+            .stTextArea textarea {
+                min-height: 50px !important;
+                height: auto !important;
+                resize: vertical !important;
+                overflow: hidden;
+                transition: height 0.2s ease;
+            }
+
+            .stTextArea textarea:focus {
+                height: auto !important;
+                min-height: 100px !important;
             }
         </style>
     """, unsafe_allow_html=True)

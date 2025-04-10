@@ -37,7 +37,7 @@ def create_interview_ui():
                 st.session_state.started = True
                 st.rerun()
         else:
-            answer = st.text_area("Your answer:", key="answer_input", height=150)
+            answer = st.text_area("Your answer:", key="answer_input", height=100, max_chars=1000)
             if st.button("Continue", use_container_width=True) and answer:
                 # Process answer and update progress
                 st.session_state.answers.append(answer)
