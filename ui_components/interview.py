@@ -104,7 +104,6 @@ def render():
         </style>
     """, unsafe_allow_html=True)
     
-    st.markdown('<h1 class="title">LIFESTORY.AI</h1>', unsafe_allow_html=True)
     st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
 
     if "started" not in st.session_state:
