@@ -181,13 +181,13 @@ def show_cards():
     # Card creation form
     with st.expander("Create New Card", expanded=True):
         card_type = st.selectbox(
-            "Card Type",
+            "Select Card Type",
             ["Event", "Memory", "Person", "Place", "Time Period"]
         )
         
         if card_type:
-            title = st.text_input("Title")
-            description = st.text_area("Description")
+            title = st.text_input("Enter Card Title")
+            description = st.text_area("Enter Card Description")
             
             if st.button("Create Card"):
                 st.success(f"Created {card_type} card: {title}")

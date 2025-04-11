@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 from .models import (
     BaseModel,
     EventModel,
@@ -54,14 +54,87 @@ def card_to_model(card: Union[BaseCard, EventCard, LocationCard, PersonCard, Emo
     else:
         raise ValueError(f"Unsupported card type: {type(card)}")
 
-def save_card(card: Union[BaseCard, EventCard, LocationCard, PersonCard, EmotionCard]):
+def model_to_card(model: BaseModel) -> Union[BaseCard, EventCard, LocationCard, PersonCard, EmotionCard]:
+    """Convert database model to card object"""
+    if isinstance(model, EventModel):
+        return EventCard(
+            id=model.id,
+            image_path=model.image_path,
+            title=model.title,
+            description=model.description,
+            location=model.location_data,
+            people=model.people_data,
+            emotions=model.emotions_data,
+            memories=model.memories_data
+        )
+    elif isinstance(model, LocationModel):
+        return LocationCard(
+            id=model.id,
+            image_path=model.image_path,
+            name=model.name,
+            events=model.events_data,
+            memories=model.memories_data
+        )
+    elif isinstance(model, PersonModel):
+        return PersonCard(
+            id=model.id,
+            image_path=model.image_path,
+            name=model.name,
+            relationship=model.relationship,
+            events=model.events_data,
+            memories=model.memories_data
+        )
+    elif isinstance(model, EmotionModel):
+        return EmotionCard(
+            id=model.id,
+            image_path=model.image_path,
+            name=model.name,
+            intensity=model.intensity,
+            memories=model.memories_data
+        )
+    else:
+        raise ValueError(f"Unsupported model type: {type(model)}")
+
+def save_card(card: Union[BaseCard, EventCard, LocationCard, PersonCard, EmotionCard], db_session=None):
     """Save card to database"""
-    db = SessionLocal()
+    close_session = False
+    if db_session is None:
+        db_session = SessionLocal()
+        close_session = True
     try:
         model = card_to_model(card)
-        db.add(model)
-        db.commit()
-        db.refresh(model)
+        db_session.add(model)
+        db_session.commit()
+        db_session.refresh(model)
         return model
     finally:
-        db.close()
+        if close_session:
+            db_session.close()
+
+def get_all_cards(db_session=None) -> List[Union[BaseCard, EventCard, LocationCard, PersonCard, EmotionCard]]:
+    """Get all cards from database"""
+    close_session = False
+    if db_session is None:
+        db_session = SessionLocal()
+        close_session = True
+    try:
+        # Get all models
+        event_cards = db_session.query(EventModel).all()
+        location_cards = db_session.query(LocationModel).all()
+        person_cards = db_session.query(PersonModel).all()
+        emotion_cards = db_session.query(EmotionModel).all()
+        
+        # Convert models to cards
+        cards = []
+        for model in event_cards + location_cards + person_cards + emotion_cards:
+            try:
+                card = model_to_card(model)
+                cards.append(card)
+            except Exception as e:
+                print(f"Error converting model to card: {str(e)}")
+                continue
+        
+        return cards
+    finally:
+        if close_session:
+            db_session.close()

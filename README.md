@@ -1,105 +1,118 @@
-# Lifestory.ai - Digital Record of Existence (DROE)
+# Lifestory.AI
 
-## Project Status: Phase 6 - Beta Testing
+A digital platform for preserving and sharing life stories through AI-powered interviews and interactive storytelling.
 
-A sophisticated AI-powered personal history platform that helps capture, organize, and explore life stories through interactive interviews and dynamic visualizations.
+## Current Status
 
-### ✅ Completed Features
+### Phase 1: Core Infrastructure (In Progress)
+- ✅ Basic card system implementation
+- ✅ Storage manager implementation
+- ✅ API endpoints setup
+- ✅ Basic web interface
+- 🔄 Testing and bug fixes
 
-- **AI Integration**
-  - OpenAI-powered image generation
-  - Whisper audio transcription
-  - Custom prompt engine for personalized interactions
-  - DROE AI Assistant with memory analysis
+### Known Issues
+1. PersonCard name attribute initialization
+2. EventCard emotions attribute handling
+3. Card type registration for PlaceCard and MemoryCard
+4. Image generation API billing limit reached
 
-- **Interview System**
-  - Dynamic question generation
-  - Context-aware follow-up questions
-  - Multi-modal input support (text, audio, images)
-  - Emotional state tracking
+### Test Status
 
-- **Timeline Visualization**
-  - Interactive chronological view
-  - Dynamic event clustering
-  - Memory connections and patterns
-  - Period-based organization
+#### Integration Tests (`test_integration.py`)
+- ✅ Person card creation and storage
+- ✅ Event card creation and storage
+- ✅ Place card creation and storage
+- ✅ Memory card creation and storage
+- ✅ Time period card creation and storage
+- ✅ Card deletion
+- ✅ Card listing
+- ✅ Card type registration
 
-- **Card System**
-  - Event cards
-  - Memory cards
-  - Person cards
-  - Place cards
-  - Emotion cards
-  - Time period cards
+#### API Tests (`test_api.py`)
+- ✅ Person creation endpoint
+- ✅ Event creation endpoint
+- ✅ Person retrieval endpoint
+- ✅ Event retrieval endpoint
+- ✅ Person update endpoint
+- ✅ Person deletion endpoint
+- ✅ Person listing endpoint
 
-### 🔄 In Progress
+### Remaining Phases
 
-- Frontend interview component testing
-- Mobile responsiveness optimization
-- Advanced timeline filtering
-- Performance optimization for large datasets
+#### Phase 2: Interview System
+- [ ] Interview question generation
+- [ ] Interview session management
+- [ ] Response processing
+- [ ] Card generation from responses
 
-### 📋 Current Tech Stack
+#### Phase 3: Media Integration
+- [ ] Image generation integration
+- [ ] Audio recording support
+- [ ] Video recording support
+- [ ] Media storage and retrieval
 
-- **Backend:**
-  - Python 3.12
-  - Flask
-  - SQLAlchemy
-  - OpenAI API
-  - Whisper API
+#### Phase 4: Story Generation
+- [ ] Narrative generation from cards
+- [ ] Timeline visualization
+- [ ] Story export options
+- [ ] Interactive story exploration
 
-- **Frontend:**
-  - Streamlit
-  - Custom React Components
-  - Interactive Data Visualization
-  - Real-time Updates
+#### Phase 5: User Experience
+- [ ] User authentication
+- [ ] Profile management
+- [ ] Sharing and collaboration
+- [ ] Mobile responsiveness
 
-- **Data Storage:**
-  - SQLite (Development)
-  - Media File Management
-  - Memory Graph Database
+## Setup
 
-### 🎯 Next Milestone Goals
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/Lifestory.AI.git
+cd Lifestory.AI
+```
 
-1. Complete frontend test coverage
-2. Implement advanced memory connections
-3. Optimize media processing pipeline
-4. Launch beta testing program
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-### 🐛 Known Issues
+3. Run the application:
+```bash
+# Run the API server
+python api.py
 
-1. Session state management in tests
-2. Timeline performance with large datasets
-3. Media upload optimization needed
+# Run the web interface
+streamlit run app.py
+```
 
-### 🚀 Getting Started
+## Development
 
-1. Clone the repository
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the application: `python main.py`
-
-### 📊 Test Coverage
-
-- Backend: 85%
-- Frontend: 70%
-- Integration: 75%
-
-## Running Tests
-
+### Running Tests
 ```bash
 python run_tests.py
+```
+
+### Project Structure
+```
+Lifestoryai/
+├── api.py              # API server
+├── app.py              # Streamlit web interface
+├── cards/              # Card system implementation
+├── storage/            # Storage manager
+├── tests/              # Test suite
+├── utils/              # Utility functions
+└── requirements.txt    # Project dependencies
 ```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Submit a pull request
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-MIT License - See LICENSE file for details
-
-## Author
-
-ReaL KeeD - Project Lead
+This project is licensed under the MIT License - see the LICENSE file for details.

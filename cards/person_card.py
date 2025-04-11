@@ -7,15 +7,38 @@ from .base_card import BaseCard
 class PersonCard(BaseCard):
     """Card representing a person in the DROE Core system."""
     
-    relationship: str = ""
-    events: List['EventCard'] = field(default_factory=list)
-    memories: List['MemoryCard'] = field(default_factory=list)
+    # Required fields
+    name: str
+    description: str
+    id: Optional[str] = None
+    
+    # Optional fields
+    birth_date: Optional[datetime] = None
+    death_date: Optional[datetime] = None
+    relationships: Dict[str, List[str]] = field(default_factory=dict)
+    created_by: Optional[str] = None
+    media_ids: List[str] = field(default_factory=list)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    def __post_init__(self):
+        """Initialize the card after dataclass initialization."""
+        if self.created_at is None:
+            self.created_at = datetime.now()
+        if self.updated_at is None:
+            self.updated_at = datetime.now()
+        super().__init__(title=self.name, description=self.description, id=self.id)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the person card to a dictionary for storage."""
         data = super().to_dict()
         data.update({
-            'relationship': self.relationship,
+            'name': self.name,
+            'birth_date': self.birth_date.isoformat() if self.birth_date else None,
+            'death_date': self.death_date.isoformat() if self.death_date else None,
+            'relationships': {k: v for k, v in self.relationships.items()},
+            'created_by': self.created_by,
+            'media_ids': self.media_ids,
             'events': [event.to_dict() for event in self.events],
             'memories': [memory.to_dict() for memory in self.memories]
         })
@@ -29,19 +52,23 @@ class PersonCard(BaseCard):
         
         # Create base card first
         person = cls(
-            title=data['title'],
-            description=data['description']
+            name=data['title'],
+            description=data['description'],
+            id=data.get('id'),
+            birth_date=datetime.fromisoformat(data['birth_date']) if data.get('birth_date') else None,
+            death_date=datetime.fromisoformat(data['death_date']) if data.get('death_date') else None,
+            relationships={k: v for k, v in data.get('relationships', {}).items()},
+            created_by=data.get('created_by'),
+            media_ids=data.get('media_ids', [])
         )
         
         # Set base card attributes
-        person.id = data.get('id')
         person.created_at = datetime.fromisoformat(data['created_at']) if 'created_at' in data else datetime.now()
         person.updated_at = datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else None
         person.metadata = data.get('metadata', {})
         person.image_path = data.get('image_path', '')
         
         # Set person-specific attributes
-        person.relationship = data.get('relationship', '')
         person.events = [EventCard.from_dict(e) for e in data.get('events', [])]
         person.memories = [MemoryCard.from_dict(m) for m in data.get('memories', [])]
         

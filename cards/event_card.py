@@ -9,59 +9,57 @@ from .time_period_card import TimePeriodCard
 class EventCard(BaseCard):
     """Card representing an event in the DROE Core system."""
     
-    start_date: datetime = field(default_factory=datetime.now)
-    end_date: Optional[datetime] = None
-    people: List['PersonCard'] = field(default_factory=list)
-    location: Optional['PlaceCard'] = None
-    time_period: Optional['TimePeriodCard'] = None
-    location_id: Optional[int] = None
-    created_by: Optional[int] = None
-    people_ids: List[int] = field(default_factory=list)
-    media_ids: List[int] = field(default_factory=list)
+    date: Optional[datetime] = None
+    location: Optional[str] = None
+    participants: List[str] = field(default_factory=list)
+    emotions: List[str] = field(default_factory=list)
+    created_by: Optional[str] = None
+    media_ids: List[str] = field(default_factory=list)
     
     def __init__(self,
                  title: str,
                  description: str,
-                 start_date: datetime,
-                 end_date: Optional[datetime] = None,
-                 location: Optional['PlaceCard'] = None,
-                 people: Optional[List['PersonCard']] = None,
+                 date: Optional[datetime] = None,
+                 location: Optional[str] = None,
+                 participants: Optional[List[str]] = None,
+                 emotions: Optional[List[str]] = None,
                  created_at: Optional[datetime] = None,
                  updated_at: Optional[datetime] = None,
-                 id: Optional[int] = None):
+                 id: Optional[str] = None):
         """
         Initialize an event card.
         
         Args:
             title (str): Event title
             description (str): Event description
-            start_date (datetime): When the event starts
-            end_date (datetime, optional): When the event ends
-            location (PlaceCard, optional): The location of the event
-            people (List[PersonCard], optional): People attending the event
-            created_at (datetime, optional): When the event was created
-            updated_at (datetime, optional): When the event was last updated
-            id (int, optional): ID of the event
+            date (datetime, optional): When the event occurred
+            location (str, optional): Where the event occurred
+            participants (List[str], optional): People involved in the event
+            emotions (List[str], optional): Emotions associated with the event
+            created_at (datetime, optional): When the card was created
+            updated_at (datetime, optional): When the card was last updated
+            id (str, optional): ID of the card
         """
-        super().__init__(title, description, created_at, updated_at, id)
-        self.start_date = start_date
-        self.end_date = end_date
+        super().__init__(title=title, description=description, id=id)
+        self.date = date
         self.location = location
-        self.people = people or []
-        self.location_id = location.id if location else None
-        self.created_by = None
-        self.people_ids = [person.id for person in people] if people else []
-        self.media_ids = []
+        self.participants = participants or []
+        self.emotions = emotions or []
+        self.created_by = created_by
+        self.media_ids = media_ids or []
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the event to a dictionary."""
         data = super().to_dict()
         data.update({
-            'start_date': self.start_date.isoformat(),
-            'end_date': self.end_date.isoformat() if self.end_date else None,
-            'people': [p.to_dict() for p in self.people],
-            'location': self.location.to_dict() if self.location else None,
-            'time_period': self.time_period.to_dict() if self.time_period else None
+            'date': self.date.isoformat() if self.date else None,
+            'location': self.location,
+            'participants': self.participants,
+            'emotions': self.emotions,
+            'created_by': self.created_by,
+            'media_ids': self.media_ids
         })
         return data
     
@@ -76,7 +74,10 @@ class EventCard(BaseCard):
         event = cls(
             title=data['title'],
             description=data['description'],
-            start_date=datetime.fromisoformat(data['start_date']) if 'start_date' in data else datetime.now()
+            date=datetime.fromisoformat(data['date']) if data.get('date') else None,
+            location=data.get('location'),
+            participants=data.get('participants', []),
+            emotions=data.get('emotions', [])
         )
         
         # Set base card attributes
@@ -87,33 +88,47 @@ class EventCard(BaseCard):
         event.image_path = data.get('image_path', '')
         
         # Set event-specific attributes
-        event.end_date = datetime.fromisoformat(data['end_date']) if data.get('end_date') else None
-        event.people = [PersonCard.from_dict(p) for p in data.get('people', [])]
-        event.location = PlaceCard.from_dict(data['location']) if data.get('location') else None
-        event.time_period = TimePeriodCard.from_dict(data['time_period']) if data.get('time_period') else None
+        event.created_by = data.get('created_by')
+        event.media_ids = data.get('media_ids', [])
         
         return event
     
     def add_person(self, person: 'PersonCard') -> None:
         """Add a person to the event."""
-        if person not in self.people:
-            self.people.append(person)
-
-    def set_location(self, place: 'PlaceCard') -> None:
+        if person.id not in self.participants:
+            self.participants.append(person.id)
+            self.updated_at = datetime.now()
+    
+    def remove_person(self, person: 'PersonCard') -> None:
+        """Remove a person from the event."""
+        if person.id in self.participants:
+            self.participants.remove(person.id)
+            self.updated_at = datetime.now()
+    
+    def set_location(self, location: 'PlaceCard') -> None:
         """Set the location of the event."""
-        self.location = place
+        self.location = location.id
+        self.updated_at = datetime.now()
+    
+    def add_emotion(self, emotion: str) -> None:
+        """Add an emotion to the event."""
+        if emotion not in self.emotions:
+            self.emotions.append(emotion)
+            self.updated_at = datetime.now()
+    
+    def remove_emotion(self, emotion: str) -> None:
+        """Remove an emotion from the event."""
+        if emotion in self.emotions:
+            self.emotions.remove(emotion)
+            self.updated_at = datetime.now()
 
-    def set_time_period(self, time_period: 'TimePeriodCard') -> None:
-        """Set the time period of the event."""
-        self.time_period = time_period
-
-    def add_media(self, media_id: int) -> None:
+    def add_media(self, media_id: str) -> None:
         """Add media to the event."""
         if media_id not in self.media_ids:
             self.media_ids.append(media_id)
             self.updated_at = datetime.now()
     
-    def remove_media(self, media_id: int) -> None:
+    def remove_media(self, media_id: str) -> None:
         """Remove media from the event."""
         if media_id in self.media_ids:
             self.media_ids.remove(media_id)

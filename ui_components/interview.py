@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 from time import sleep
@@ -115,19 +114,22 @@ def render():
             
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                name = st.text_input("", key="name_input", label_visibility="collapsed")
+                name = st.text_input("Enter your name", key="name_input")
                 if st.button("CONTINUE"):
                     try:
-                        response = requests.get("http://0.0.0.0:5000/interview", timeout=5)
-                        data = response.json()
-                        if response.status_code == 200 and data and "question" in data:
-                            st.session_state.started = True
-                            st.session_state.current_question = data["question"]
-                            st.session_state.stage = data.get("current_stage", "welcome")
-                            st.session_state.name = name
-                            st.rerun()
+                        response = requests.get("http://localhost:5001/interview", timeout=5)
+                        if response.status_code == 200:
+                            data = response.json()
+                            if "question" in data:
+                                st.session_state.started = True
+                                st.session_state.current_question = data["question"]
+                                st.session_state.stage = data.get("current_stage", "welcome")
+                                st.session_state.name = name
+                                st.rerun()
+                            else:
+                                st.error("Invalid response from server")
                         else:
-                            st.error(f"Server response error: {response.status_code}")
+                            st.error(f"Server error: {response.status_code}")
                     except requests.exceptions.ConnectionError:
                         st.error("Failed to connect to server. Please try again.")
                     except Exception as e:
@@ -140,12 +142,12 @@ def render():
             
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                answer = st.text_input("", key="answer_input", label_visibility="collapsed")
+                answer = st.text_input("Your answer", key="answer_input")
                 if st.button("CONTINUE"):
                     if answer.strip():
                         try:
                             response = requests.post(
-                                "http://0.0.0.0:5000/interview",
+                                "http://localhost:5001/interview",
                                 json={"answer": answer.strip()},
                                 timeout=5
                             )
@@ -159,8 +161,12 @@ def render():
                                     st.session_state.stage = data.get("current_stage")
                                     st.session_state.progress = float(data.get("progress", 0))
                                     st.rerun()
+                            else:
+                                st.error(f"Server error: {response.status_code}")
                         except Exception as e:
                             st.error(f"An error occurred: {str(e)}")
+                    else:
+                        st.warning("Please enter an answer before continuing")
 
         st.markdown('<div class="copyright">COPYRIGHT 2025 REAL KEED</div>', unsafe_allow_html=True)
 

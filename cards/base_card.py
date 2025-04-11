@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
 from utils.image_generator import ImageGenerator
 from .media import Media
+import uuid
 
 @dataclass
 class BaseCard:
@@ -10,7 +11,7 @@ class BaseCard:
     
     title: str
     description: str
-    id: Optional[int] = None
+    id: Optional[str] = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: Optional[datetime] = None
     metadata: Optional[dict] = None
@@ -19,6 +20,8 @@ class BaseCard:
     
     def __post_init__(self):
         """Initialize any fields that need post-initialization setup."""
+        if not self.id:
+            self.id = str(uuid.uuid4())
         if not self.image_path:
             self.generate_default_image()
         if self.created_at is None:

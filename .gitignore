@@ -31,16 +31,35 @@ ENV/
 *.swp
 *.swo
 
-# Environment variables
-.env
-.env.local
-
 # Logs
 *.log
+logs/
 
-# Database
+# Local development
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Storage
+storage/
 *.db
+*.sqlite
 *.sqlite3
+
+# Media files
+media/
+*.mp3
+*.wav
+*.mp4
+*.jpg
+*.jpeg
+*.png
+*.gif
 
 # OS
 .DS_Store
