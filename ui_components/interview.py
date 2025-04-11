@@ -12,25 +12,28 @@ def reset_session():
     st.session_state.error = None
 
 def render():
-    # Custom CSS for the new design
     st.markdown("""
         <style>
         .stApp {
             background-color: black;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         .title {
             color: #0096FF;
-            font-size: 48px;
+            font-size: 32px;
             text-align: center;
-            margin-bottom: 20px;
+            margin: 10px 0;
             font-family: 'Arial Black', sans-serif;
         }
         
         .orb {
-            width: 200px;
-            height: 200px;
-            margin: 20px auto;
+            width: 150px;
+            height: 150px;
+            margin: 10px auto;
             background: radial-gradient(circle at 30% 30%, #00ffdd, #006666);
             border-radius: 50%;
             box-shadow: 0 0 30px #00ffdd55;
@@ -45,11 +48,12 @@ def render():
         
         .copyright {
             position: fixed;
-            bottom: 20px;
+            bottom: 10px;
             width: 100%;
             text-align: center;
             color: white;
             left: 0;
+            font-size: 12px;
         }
         
         .stTextInput > div > div {
@@ -64,11 +68,11 @@ def render():
             color: #0096FF;
             border: 2px solid #0096FF;
             border-radius: 5px;
-            padding: 10px 30px;
-            font-size: 18px;
+            padding: 8px 24px;
+            font-size: 16px;
             transition: all 0.3s;
-            width: 200px;
-            margin: 0 auto;
+            width: 160px;
+            margin: 10px auto;
             display: block;
         }
         
@@ -80,25 +84,36 @@ def render():
         div[data-testid="stVerticalBlock"] {
             gap: 0em;
         }
+
+        .question-text {
+            text-align: center;
+            color: white;
+            margin: 10px 0;
+            font-size: 20px;
+        }
+
+        .stProgress {
+            margin: 5px 0;
+        }
+
+        div[data-testid="stForm"] {
+            background-color: transparent;
+            border: none;
+            padding: 0 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     
-    # Title
     st.markdown('<h1 class="title">LIFESTORY.AI</h1>', unsafe_allow_html=True)
-    
-    # Animated orb
     st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
 
-    # Initialize session state
     if "started" not in st.session_state:
         reset_session()
 
     try:
         if not st.session_state.started:
-            # Center align text
-            st.markdown('<h2 style="text-align: center; color: white; margin: 20px 0;">I\'m DROE, Let\'s talk about your life.<br>What\'s your name?</h2>', unsafe_allow_html=True)
+            st.markdown('<h2 class="question-text">I\'m DROE, Let\'s talk about your life.<br>What\'s your name?</h2>', unsafe_allow_html=True)
             
-            # Create columns for centering
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 name = st.text_input("", key="name_input", label_visibility="collapsed")
@@ -117,14 +132,11 @@ def render():
                     except Exception as e:
                         st.error(f"An error occurred: {str(e)}")
         else:
-            # Show progress
             if st.session_state.progress > 0:
                 st.progress(st.session_state.progress / 100)
 
-            # Show current question
-            st.markdown(f'<h2 style="text-align: center; color: white; margin: 20px 0;">{st.session_state.current_question}</h2>', unsafe_allow_html=True)
+            st.markdown(f'<h2 class="question-text">{st.session_state.current_question}</h2>', unsafe_allow_html=True)
             
-            # Create columns for centering
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 answer = st.text_input("", key="answer_input", label_visibility="collapsed")
@@ -149,7 +161,6 @@ def render():
                         except Exception as e:
                             st.error(f"An error occurred: {str(e)}")
 
-        # Copyright notice
         st.markdown('<div class="copyright">COPYRIGHT 2025 REAL KEED</div>', unsafe_allow_html=True)
 
     except Exception as e:
