@@ -13,3 +13,9 @@ pandas==2.2.1
 plotly==5.19.0
 flask-cors
 requests
+pytest
+pytest
+pytest
+pytest-cov
+pytest
+pytest-cov
