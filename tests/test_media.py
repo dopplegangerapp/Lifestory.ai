@@ -107,7 +107,8 @@ class TestMedia(TestBase):
         data = response.get_json()
         self.assertIn('image_url', data)
         self.assertIn('media_id', data)
-        mock_openai.Image.create.assert_called_once()
+        mock_client = mock_openai_class.return_value
+        mock_client.images.generate.assert_called_once()
 
     def test_generate_image_no_prompt(self):
         # Test image generation without prompt
