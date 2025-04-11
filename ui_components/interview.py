@@ -1,30 +1,19 @@
-
 import streamlit as st
 import requests
-from typing import Dict, Any
-
-def handle_error(error: str) -> None:
-    """Display error message and reset interview if needed"""
-    st.error(error)
-    if "Connection refused" in error:
-        st.warning("Please ensure the API server is running")
-        if st.button("Reset Interview"):
-            st.session_state.clear()
-            st.rerun()
 
 def render():
     st.title("Life Story Interview")
-    
+
     # Initialize session state
     if "started" not in st.session_state:
         st.session_state.started = False
-    if "answers" not in st.session_state:
+    if 'answers' not in st.session_state:
         st.session_state.answers = []
-    if "current_question" not in st.session_state:
+    if 'current_question' not in st.session_state:
         st.session_state.current_question = None
-    if "stage" not in st.session_state:
+    if 'stage' not in st.session_state:
         st.session_state.stage = None
-    if "progress" not in st.session_state:
+    if 'progress' not in st.session_state:
         st.session_state.progress = 0
 
     try:
@@ -39,26 +28,25 @@ def render():
                     st.session_state.progress = float(data.get("progress", 0))
                     st.rerun()
                 else:
-                    handle_error(f"Failed to start interview: {response.status_code}")
+                    st.error("Failed to start interview. Please try again.")
         else:
             # Show progress
-            progress_val = st.session_state.progress / 100
-            st.progress(progress_val)
-            
-            # Show current stage
+            st.progress(st.session_state.progress / 100)
+
+            # Show current stage if available
             if st.session_state.stage:
                 st.subheader(f"Stage: {st.session_state.stage.title()}")
-            
+
             # Show question and get answer
             st.write(st.session_state.current_question)
-            answer = st.text_area("Your answer:", key="answer_input")
-            
+            answer = st.text_area("Your answer:", key="answer_input", height=100)
+
             col1, col2 = st.columns([1, 4])
             with col1:
                 if st.button("Reset"):
                     st.session_state.clear()
                     st.rerun()
-                    
+
             with col2:
                 if st.button("Continue", use_container_width=True, disabled=not answer):
                     response = requests.post(
@@ -68,7 +56,7 @@ def render():
 
                     if response.status_code == 200:
                         data = response.json()
-                        
+
                         # Store answer
                         st.session_state.answers.append({
                             "question": st.session_state.current_question,
@@ -80,7 +68,6 @@ def render():
                             st.success("Interview completed!")
                             st.session_state.started = False
                             st.session_state.current_question = None
-                            st.balloons()
                             st.rerun()
                         else:
                             st.session_state.current_question = data.get("next_question")
@@ -88,14 +75,9 @@ def render():
                             st.session_state.progress = float(data.get("progress", 0))
                             st.rerun()
                     else:
-                        handle_error(f"Failed to submit answer: {response.status_code}")
+                        st.error("Failed to submit answer. Please try again.")
 
     except requests.exceptions.ConnectionError:
-        handle_error("Could not connect to server. Please ensure the API is running.")
+        st.error("Could not connect to server. Please ensure the API is running.")
     except Exception as e:
-        handle_error(f"An error occurred: {str(e)}")
-
-    # Show debug info in development
-    if st.session_state.get("debug", False):
-        st.write("Debug Info:")
-        st.write(st.session_state)
+        st.error(f"An error occurred: {str(e)}")
