@@ -1,7 +1,7 @@
 
 import unittest
 from flask import Flask, session
-from routes.interview import interview_bp, InterviewStage
+from routes.interview import interview_bp, InterviewStage, INTERVIEW_QUESTIONS
 import json
 
 class TestInterview(unittest.TestCase):
@@ -19,12 +19,15 @@ class TestInterview(unittest.TestCase):
             data = json.loads(response.data)
             self.assertIn('question', data)
             self.assertIn('current_stage', data)
+            self.assertEqual(data['current_stage'], 'welcome')
             self.assertIn('progress', data)
+            self.assertGreaterEqual(data['progress'], 0)
 
     def test_submit_valid_answer(self):
         with self.app.test_client() as client:
             # Start interview
-            client.get('/interview/')
+            response = client.get('/interview/')
+            self.assertEqual(response.status_code, 200)
             
             # Submit answer
             response = client.post('/interview/', 
@@ -34,6 +37,7 @@ class TestInterview(unittest.TestCase):
             data = json.loads(response.data)
             self.assertTrue(data['success'])
             self.assertIn('next_question', data)
+            self.assertFalse(data['completed'])
 
     def test_submit_empty_answer(self):
         with self.app.test_client() as client:
@@ -41,19 +45,36 @@ class TestInterview(unittest.TestCase):
             response = client.post('/interview/', 
                                  json={'answer': ''})
             self.assertEqual(response.status_code, 400)
+            data = json.loads(response.data)
+            self.assertEqual(data['error'], 'Answer cannot be empty')
 
     def test_interview_completion(self):
         with self.app.test_client() as client:
-            client.get('/interview/')
+            # Get initial question
+            response = client.get('/interview/')
+            self.assertEqual(response.status_code, 200)
             
             # Complete all questions
-            for _ in range(len(InterviewStage.INTERVIEW_QUESTIONS)):
+            total_questions = sum(len(questions) for questions in INTERVIEW_QUESTIONS.values())
+            
+            for _ in range(total_questions):
                 response = client.post('/interview/', 
                                      json={'answer': 'Test answer'})
-                if response.json.get('completed'):
+                data = json.loads(response.data)
+                
+                if data.get('completed'):
                     break
                     
-            self.assertTrue(response.json.get('completed'))
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(data['success'])
+                
+            self.assertTrue(data['completed'])
+
+    def test_invalid_request(self):
+        with self.app.test_client() as client:
+            response = client.post('/interview/', 
+                                 json={'invalid': 'data'})
+            self.assertEqual(response.status_code, 400)
 
 if __name__ == '__main__':
     unittest.main()
