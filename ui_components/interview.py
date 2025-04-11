@@ -55,26 +55,26 @@ def create_interview_ui():
                     if response.status_code == 200:
                         data = response.json()
                         
-                        # Store the answer
+                        # Store the answer and clear input
                         st.session_state.answers.append(answer)
+                        st.session_state.answer_input = ""
                         
-                        # Update progress if provided
+                        # Update progress
                         if "progress" in data:
                             st.session_state.progress = float(data.get("progress", 0)) / 100
-                        
-                        # Update stage if provided
-                        if "current_stage" in data:
-                            st.session_state.stage = data["current_stage"]
                         
                         # Handle next question or completion
                         next_question = data.get("next_question")
                         if next_question:
                             st.session_state.current_question = next_question
-                            # Clear the previous answer
-                            st.session_state.answer_input = ""
-                            st.rerun()
+                            if "current_stage" in data:
+                                st.session_state.stage = data["current_stage"]
+                            st.experimental_rerun()
                         elif data.get("completed", False):
                             st.success("Interview completed!")
+                            st.session_state.current_question = "Thank you for sharing your story!"
+                        else:
+                            st.error("No next question received from server")
                             st.session_state.current_question = "Thank you for sharing your story!"
                         else:
                             st.error("No next question received")
