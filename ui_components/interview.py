@@ -119,13 +119,15 @@ def render():
                 if st.button("CONTINUE"):
                     try:
                         response = requests.get("http://0.0.0.0:5000/interview", timeout=5)
-                        if response.status_code == 200:
-                            data = response.json()
+                        data = response.json()
+                        if response.status_code == 200 and data and "question" in data:
                             st.session_state.started = True
-                            st.session_state.current_question = data.get("question")
-                            st.session_state.stage = data.get("current_stage")
+                            st.session_state.current_question = data["question"]
+                            st.session_state.stage = data.get("current_stage", "welcome")
                             st.session_state.name = name
                             st.rerun()
+                        else:
+                            st.error(f"Server response error: {response.status_code}")
                     except requests.exceptions.ConnectionError:
                         st.error("Failed to connect to server. Please try again.")
                     except Exception as e:
