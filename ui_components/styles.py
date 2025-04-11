@@ -57,12 +57,22 @@ def add_custom_styles():
                 margin: 0.5rem 0;
             }
 
-            /* Ensure content fits screen */
+            /* Reset and base styles */
             .main .block-container {
-                padding: 0.5rem;
-                max-width: 800px;
+                padding: 0;
+                max-width: 100%;
                 width: 100%;
-                margin: 0 auto;
+                margin: 0;
+                background-color: black;
+            }
+            
+            /* Hide Streamlit default elements */
+            #MainMenu, header, footer {
+                display: none !important;
+            }
+            
+            .stApp {
+                background-color: black;
             }
 
             /* Remove background orb */
