@@ -5,17 +5,19 @@ import requests
 def create_interview_ui():
     """Create an engaging and supportive interview UI."""
     
-    # Initialize session state
+    # Initialize session state with defaults
     if 'current_question' not in st.session_state:
         st.session_state.current_question = "Ready to begin your life story interview?"
     if 'stage' not in st.session_state:
-        st.session_state.stage = "welcome"
+        st.session_state.stage = "welcome" 
     if 'progress' not in st.session_state:
         st.session_state.progress = 0
     if 'started' not in st.session_state:
         st.session_state.started = False
     if 'answers' not in st.session_state:
         st.session_state.answers = []
+    if 'error_count' not in st.session_state:
+        st.session_state.error_count = 0
 
     # Create a clean, minimal container
     with st.container():
@@ -49,15 +51,19 @@ def create_interview_ui():
                 try:
                     response = requests.post(
                         "http://0.0.0.0:5000/interview",
-                        json={"answer": answer}
+                        json={"answer": answer, "stage": st.session_state.stage},
+                        timeout=10
                     )
                     
                     if response.status_code == 200:
                         data = response.json()
+                        st.session_state.error_count = 0
                         
-                        # Store the answer and clear input
-                        st.session_state.answers.append(answer)
-                        st.session_state.answer_input = ""
+                        # Store the answer
+                        st.session_state.answers.append({
+                            'answer': answer,
+                            'stage': st.session_state.stage
+                        })
                         
                         # Update progress
                         if "progress" in data:
@@ -69,15 +75,24 @@ def create_interview_ui():
                             st.session_state.current_question = next_question
                             if "current_stage" in data:
                                 st.session_state.stage = data["current_stage"]
+                            st.session_state.answer_input = ""
                             st.experimental_rerun()
                         elif data.get("completed", False):
                             st.success("Interview completed!")
                             st.session_state.current_question = "Thank you for sharing your story!"
-                        else:
-                            st.error("No next question received from server")
-                            st.session_state.current_question = "Thank you for sharing your story!"
-                        else:
-                            st.error("No next question received")
+                            st.session_state.started = False
+                    else:
+                        st.error(f"Server error: {response.status_code}")
+                        st.session_state.error_count += 1
+                        if st.session_state.error_count > 3:
+                            st.session_state.started = False
+                            st.error("Too many errors occurred. Please try again later.")
+                except Exception as e:
+                    st.error(f"Connection error: {str(e)}")
+                    st.session_state.error_count += 1
+                    if st.session_state.error_count > 3:
+                        st.session_state.started = False
+                        st.error("Too many errors occurred. Please try again later.")
                     else:
                         st.error(f"Failed to submit answer: {response.status_code}")
                 except Exception as e:
