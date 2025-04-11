@@ -1,47 +1,11 @@
-from flask import Blueprint, render_template, request, jsonify, session
+from flask import Blueprint, jsonify, request, session
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from ai.prompt_engine import PromptEngine
-from ai.image_generator import ImageGenerator
-from utils.db_utils import get_db
-from ai.assistant import Assistant
 from dataclasses import dataclass, field, asdict
-import json
-import random
 
 interview_bp = Blueprint('interview', __name__)
 
-class InterviewStage:
-    def __init__(self):
-        self.current_stage = "welcome"
-        self.current_question_index = 0
-        self.answers = []
-        self.completed = False
-        self.created_at = datetime.now()
-        self.context = {}  # Store context for personalized follow-up questions
-    
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "current_stage": self.current_stage,
-            "current_question_index": self.current_question_index,
-            "answers": self.answers,
-            "completed": self.completed,
-            "created_at": self.created_at.isoformat(),
-            "context": self.context
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'InterviewStage':
-        stage = cls()
-        stage.current_stage = data.get("current_stage", "welcome")
-        stage.current_question_index = data.get("current_question_index", 0)
-        stage.answers = data.get("answers", [])
-        stage.completed = data.get("completed", False)
-        stage.created_at = datetime.fromisoformat(data.get("created_at", datetime.now().isoformat()))
-        stage.context = data.get("context", {})
-        return stage
-
-# Interview questions by stage with context-aware follow-ups
+# Interview questions by stage with context-aware follow-ups (from original code)
 INTERVIEW_QUESTIONS = {
     "welcome": [
         {
@@ -154,130 +118,157 @@ INTERVIEW_QUESTIONS = {
     ]
 }
 
-def get_or_create_stage() -> InterviewStage:
-    if 'interview_stage' not in session:
-        stage = InterviewStage()
-        session['interview_stage'] = stage.to_dict()
-    else:
-        stage = InterviewStage.from_dict(session['interview_stage'])
-    return stage
+class InterviewStage:
+    def __init__(self):
+        self.current_stage = "welcome"
+        self.current_question_index = 0
+        self.answers = []
+        self.completed = False
+        self.created_at = datetime.now()
+        self.context = {}
 
-def generate_follow_up_question(stage: InterviewStage, answer: str) -> str:
-    """Generate a personalized follow-up question based on the answer and context."""
-    current_question = INTERVIEW_QUESTIONS[stage.current_stage][stage.current_question_index]
-    context_key = current_question.get('context_key')
-    
-    if context_key:
-        # Simple context extraction (in a real app, this would use NLP)
-        stage.context[context_key] = answer
-        follow_up = current_question.get('follow_up', '')
-        
-        # Replace placeholders with context
-        for key, value in stage.context.items():
-            follow_up = follow_up.replace(f"{{{key}}}", str(value))
-        
-        return follow_up
-    return ""
+    def advance(self) -> bool:
+        """Advance to next question or stage, returns True if interview is complete"""
+        current_stage_questions = INTERVIEW_QUESTIONS.get(self.current_stage, [])
 
-@interview_bp.route('/', strict_slashes=False, methods=['GET'])
+        if self.current_question_index < len(current_stage_questions) - 1:
+            self.current_question_index += 1
+            return False
+
+        # Move to next stage
+        stages = list(INTERVIEW_QUESTIONS.keys())
+        current_stage_index = stages.index(self.current_stage)
+
+        if current_stage_index < len(stages) - 1:
+            self.current_stage = stages[current_stage_index + 1]
+            self.current_question_index = 0
+            return False
+
+        self.completed = True
+        return True
+
+    def get_current_question(self) -> Optional[Dict]:
+        """Get current question data"""
+        if self.completed:
+            return None
+
+        current_stage_questions = INTERVIEW_QUESTIONS.get(self.current_stage, [])
+        if self.current_question_index < len(current_stage_questions):
+            return current_stage_questions[self.current_question_index]
+        return None
+
+    def get_progress(self) -> float:
+        """Calculate interview progress"""
+        if self.completed:
+            return 100.0
+
+        total_questions = sum(len(questions) for questions in INTERVIEW_QUESTIONS.values())
+        completed_questions = 0
+
+        for stage, questions in INTERVIEW_QUESTIONS.items():
+            if stage == self.current_stage:
+                completed_questions += self.current_question_index
+                break
+            completed_questions += len(questions)
+
+        return (completed_questions / total_questions) * 100
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "current_stage": self.current_stage,
+            "current_question_index": self.current_question_index,
+            "answers": self.answers,
+            "completed": self.completed,
+            "created_at": self.created_at.isoformat(),
+            "context": self.context
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'InterviewStage':
+        stage = cls()
+        stage.current_stage = data.get("current_stage", "welcome")
+        stage.current_question_index = data.get("current_question_index", 0)
+        stage.answers = data.get("answers", [])
+        stage.completed = data.get("completed", False)
+        stage.created_at = datetime.fromisoformat(data.get("created_at", datetime.now().isoformat()))
+        stage.context = data.get("context", {})
+        return stage
+
+
+@interview_bp.route('/', methods=['GET'])
 def get_question():
-    stage = get_or_create_stage()
-    
+    stage = InterviewStage() if 'interview_stage' not in session else InterviewStage.from_dict(session['interview_stage'])
+
     if stage.completed:
         return jsonify({
-            "question": "Thank you for sharing your story! Your life journey has been documented.",
+            "question": "Thank you for sharing your story!",
             "completed": True,
             "current_stage": stage.current_stage,
             "progress": 100
         })
-    
-    current_stage_questions = INTERVIEW_QUESTIONS.get(stage.current_stage, [])
-    if stage.current_question_index >= len(current_stage_questions):
-        # Move to next stage
-        stages = list(INTERVIEW_QUESTIONS.keys())
-        current_stage_index = stages.index(stage.current_stage)
-        if current_stage_index < len(stages) - 1:
-            stage.current_stage = stages[current_stage_index + 1]
-            stage.current_question_index = 0
-            session['interview_stage'] = stage.to_dict()
-            return get_question()
-        else:
-            stage.completed = True
-            session['interview_stage'] = stage.to_dict()
-            return jsonify({
-                "question": "Thank you for sharing your story! Your life journey has been documented.",
-                "completed": True
-            })
-    
-    question_data = current_stage_questions[stage.current_question_index]
+
+    question_data = stage.get_current_question()
+    if not question_data:
+        return jsonify({"error": "No question available"}), 400
+
+    session['interview_stage'] = stage.to_dict()
     return jsonify({
         "question": question_data["question"],
         "current_stage": stage.current_stage,
-        "progress": (stage.current_question_index / len(current_stage_questions)) * 100
+        "progress": stage.get_progress()
     })
 
-@interview_bp.route('/', strict_slashes=False, methods=['POST'])
+@interview_bp.route('/', methods=['POST'])
 def submit_answer():
-    stage = get_or_create_stage()
+    if 'interview_stage' not in session:
+        return jsonify({"error": "Interview not started"}), 400
+
+    stage = InterviewStage.from_dict(session['interview_stage'])
     data = request.get_json()
-    answer = data.get('answer', '').strip()
-    
+
+    if not data or 'answer' not in data:
+        return jsonify({"error": "No answer provided"}), 400
+
+    answer = data['answer'].strip()
     if not answer:
         return jsonify({"error": "Answer cannot be empty"}), 400
-    
-    current_stage_questions = INTERVIEW_QUESTIONS.get(stage.current_stage, [])
-    if stage.current_question_index < len(current_stage_questions):
-        question_data = current_stage_questions[stage.current_question_index]
-        follow_up = generate_follow_up_question(stage, answer)
-        
-        stage.answers.append({
-            "question": question_data["question"],
-            "answer": answer,
-            "follow_up": follow_up,
-            "stage": stage.current_stage,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # Move to next question
-        stage.current_question_index += 1
-        
-        # Check if we need to move to next stage
-        if stage.current_question_index >= len(current_stage_questions):
-            stages = list(INTERVIEW_QUESTIONS.keys())
-            current_stage_index = stages.index(stage.current_stage)
-            if current_stage_index < len(stages) - 1:
-                stage.current_stage = stages[current_stage_index + 1]
-                stage.current_question_index = 0
-            else:
-                stage.completed = True
-        
-        session['interview_stage'] = stage.to_dict()
-        
-        # Get the next question
-        next_question_data = None
-        if not stage.completed:
-            next_stage_questions = INTERVIEW_QUESTIONS.get(stage.current_stage, [])
-            if stage.current_question_index < len(next_stage_questions):
-                next_question_data = next_stage_questions[stage.current_question_index]
-        
+
+    current_question = stage.get_current_question()
+    if not current_question:
+        return jsonify({"error": "No current question"}), 400
+
+    stage.answers.append({
+        "question": current_question["question"],
+        "answer": answer,
+        "stage": stage.current_stage,
+        "timestamp": datetime.now().isoformat()
+    })
+
+    is_complete = stage.advance()
+    session['interview_stage'] = stage.to_dict()
+
+    if is_complete:
         return jsonify({
-            "success": True,
-            "follow_up": follow_up,
-            "next_question": next_question_data["question"] if next_question_data else None,
-            "current_stage": stage.current_stage,
-            "progress": (stage.current_question_index / len(INTERVIEW_QUESTIONS.get(stage.current_stage, []))) * 100,
-            "completed": stage.completed
+            "completed": True,
+            "success": True
         })
-    
-    return jsonify({"error": "Invalid question index"}), 400
+
+    next_question = stage.get_current_question()
+    return jsonify({
+        "success": True,
+        "next_question": next_question["question"],
+        "current_stage": stage.current_stage,
+        "progress": stage.get_progress(),
+        "completed": False
+    })
 
 @interview_bp.route('/progress', methods=['GET'], strict_slashes=False)
 def get_interview_progress():
     """Get the current interview progress."""
-    stage = get_or_create_stage()
+    stage = InterviewStage() if 'interview_stage' not in session else InterviewStage.from_dict(session['interview_stage'])
     return jsonify({
         'current_stage': stage.current_stage,
         'stage_name': stage.current_stage,
-        'progress': (stage.current_question_index / len(INTERVIEW_QUESTIONS.get(stage.current_stage, []))) * 100,
+        'progress': stage.get_progress(),
         'is_complete': stage.completed
     })
