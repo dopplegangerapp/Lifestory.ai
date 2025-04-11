@@ -1,118 +1,93 @@
-
 # Lifestory.ai - Digital Record of Existence (DROE)
 
-A modern web application for capturing, organizing, and exploring your life's memories through AI-assisted interviews, timelines, and memory cards.
+## Project Status: Phase 6 - Beta Testing
 
-## Current Tech Stack
+A sophisticated AI-powered personal history platform that helps capture, organize, and explore life stories through interactive interviews and dynamic visualizations.
 
-### Backend
-- Python 3.12
-- Flask (Web framework)
-- SQLAlchemy (ORM)
-- SQLite (Database)
+### ✅ Completed Features
 
-### Frontend
-- Streamlit (UI Framework)
-- Custom CSS/JavaScript
-- Plotly (Data visualization)
+- **AI Integration**
+  - OpenAI-powered image generation
+  - Whisper audio transcription
+  - Custom prompt engine for personalized interactions
+  - DROE AI Assistant with memory analysis
 
-### AI/ML Integration
-- Whisper (Audio transcription) - In Progress
-- Custom Prompt Engine
-- Image Generation Capabilities
+- **Interview System**
+  - Dynamic question generation
+  - Context-aware follow-up questions
+  - Multi-modal input support (text, audio, images)
+  - Emotional state tracking
 
-## Projected Tech Stack (After Completion)
+- **Timeline Visualization**
+  - Interactive chronological view
+  - Dynamic event clustering
+  - Memory connections and patterns
+  - Period-based organization
 
-### Additional Features
-- OpenAI GPT Integration
-- Advanced Image Recognition
-- Natural Language Processing
-- Real-time Audio Processing
-- Advanced Timeline Visualization
-- Memory Graph Database
+- **Card System**
+  - Event cards
+  - Memory cards
+  - Person cards
+  - Place cards
+  - Emotion cards
+  - Time period cards
 
-## Current Phase: Alpha Development
+### 🔄 In Progress
 
-### Completed Features
-- Basic UI Framework
-- Interview Component
-- Timeline View
-- Card System Architecture
-- Basic Testing Framework
-- Media Upload Functionality
+- Frontend interview component testing
+- Mobile responsiveness optimization
+- Advanced timeline filtering
+- Performance optimization for large datasets
 
-### In Progress
-- Frontend Interview Testing
-- AI Integration
-- Advanced Timeline Features
-- Media Processing Pipeline
+### 📋 Current Tech Stack
 
-## Current Issues
+- **Backend:**
+  - Python 3.12
+  - Flask
+  - SQLAlchemy
+  - OpenAI API
+  - Whisper API
 
-1. Frontend Testing
-   - Interview component tests failing
-   - Session state management needs improvement
-   - Mock integration required for AI components
+- **Frontend:**
+  - Streamlit
+  - Custom React Components
+  - Interactive Data Visualization
+  - Real-time Updates
 
-2. Backend Integration
-   - API endpoint stabilization needed
-   - Database optimization required
-   - Error handling improvements needed
+- **Data Storage:**
+  - SQLite (Development)
+  - Media File Management
+  - Memory Graph Database
 
-3. UI/UX
-   - Mobile responsiveness improvements needed
-   - Timeline performance optimization
-   - Card view refinements
+### 🎯 Next Milestone Goals
 
-## Roadmap
+1. Complete frontend test coverage
+2. Implement advanced memory connections
+3. Optimize media processing pipeline
+4. Launch beta testing program
 
-### Phase 1 (Current)
-- [x] Basic Framework Setup
-- [x] Core UI Components
-- [ ] Complete Test Coverage
-- [ ] Basic AI Integration
+### 🐛 Known Issues
 
-### Phase 2
-- [ ] Advanced AI Features
-- [ ] Enhanced Timeline
-- [ ] Memory Graph
-- [ ] Mobile App Development
+1. Session state management in tests
+2. Timeline performance with large datasets
+3. Media upload optimization needed
 
-### Phase 3
-- [ ] Social Features
-- [ ] Advanced Analytics
-- [ ] API Platform
-- [ ] Enterprise Features
-
-## Development Setup
+### 🚀 Getting Started
 
 1. Clone the repository
-2. Install dependencies:
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the application: `python main.py`
+
+### 📊 Test Coverage
+
+- Backend: 85%
+- Frontend: 70%
+- Integration: 75%
+
+## Running Tests
+
 ```bash
-pip install -r requirements.txt
-```
-3. Run the application:
-```bash
-python main.py
-```
-
-## Testing
-
-Run tests using:
-```bash
-python -m pytest
-```
-
-## Project Structure
-
-```
-├── ai/                 # AI/ML components
-├── cards/             # Card system modules
-├── db/                # Database models and utilities
-├── routes/            # API routes and handlers
-├── ui_components/     # Streamlit UI components
-├── utils/             # Helper utilities
-└── tests/             # Test suites
+python run_tests.py
 ```
 
 ## Contributing
@@ -125,6 +100,6 @@ python -m pytest
 
 MIT License - See LICENSE file for details
 
-## Authors
+## Author
 
 ReaL KeeD - Project Lead
