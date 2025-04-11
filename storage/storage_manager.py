@@ -9,6 +9,7 @@ from cards.place_card import PlaceCard
 from cards.memory_card import MemoryCard
 from cards.time_period_card import TimePeriodCard
 from utils.logger import get_logger
+import uuid
 
 class StorageManager:
     """Manages storage of cards in the DROE Core system."""
@@ -46,19 +47,28 @@ class StorageManager:
         Args:
             card (BaseCard): The card to save
         """
-        card_type = card.__class__.__name__.lower().replace('card', '')
-        if card_type not in self.card_types:
-            raise ValueError(f"Unsupported card type: {card.__class__}")
+        try:
+            # Get card type from class name
+            card_type = card.__class__.__name__.lower().replace('card', '')
+            if card_type not in self.card_types:
+                raise ValueError(f"Unsupported card type: {type(card)}")
+                
+            # Ensure card has an ID
+            if not card.id:
+                card.id = str(uuid.uuid4())
+                
+            # Convert card to dictionary
+            card_dict = card.to_dict()
             
-        card_path = self._get_card_path(card.id, card_type)
-        card_data = card.to_dict()
+            # Save to file
+            card_path = self._get_card_path(card.id, card_type)
+            with open(card_path, 'w') as f:
+                json.dump(card_dict, f, indent=2)
+                
+        except Exception as e:
+            self.logger.error(f"Error saving card: {str(e)}")
+            raise
         
-        # Add card type information
-        card_data['type'] = card_type
-        
-        with open(card_path, 'w') as f:
-            json.dump(card_data, f, indent=2)
-            
     def load_card(self, card_id: str, card_type: str) -> Optional[BaseCard]:
         """
         Load a card from storage.
@@ -163,7 +173,15 @@ class StorageManager:
         Returns:
             str: The card type
         """
-        return card.__class__.__name__.lower()
+        # Convert class name to lowercase and remove 'Card' suffix
+        class_name = card.__class__.__name__.lower()
+        card_type = class_name.replace('card', '')
+        
+        # Ensure card type is supported
+        if card_type not in self.card_types:
+            raise ValueError(f"Unsupported card type: {card.__class__}")
+            
+        return card_type
         
     def register_card_type(self, card_type: str, card_class: Type[BaseCard]) -> None:
         """

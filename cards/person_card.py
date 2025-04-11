@@ -11,9 +11,6 @@ class PersonCard(BaseCard):
     title: str
     description: str
     
-    # Required fields for PersonCard
-    name: str = field(init=False)  # Will be set from title in post_init
-    
     # Optional fields from BaseCard
     id: Optional[str] = None
     created_at: datetime = field(default_factory=datetime.now)
@@ -22,19 +19,58 @@ class PersonCard(BaseCard):
     image_path: str = ""
     media: List['Media'] = field(default_factory=list)
     
-    # Optional fields for PersonCard
+    # Person-specific fields
+    name: str = ""
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
-    relationships: Dict[str, List[str]] = field(default_factory=dict)
+    relationships: List[str] = field(default_factory=list)
     created_by: Optional[str] = None
     media_ids: List[str] = field(default_factory=list)
     events: List['EventCard'] = field(default_factory=list)
     memories: List['MemoryCard'] = field(default_factory=list)
     
     def __post_init__(self):
-        """Initialize the card after dataclass initialization."""
-        super().__post_init__()
-        self.name = self.title  # Set name from title
+        """Set the name from the title if not explicitly set."""
+        if not self.name:
+            self.name = self.title
+            
+    def __init__(self,
+                 title: str,
+                 description: str,
+                 name: Optional[str] = None,
+                 birth_date: Optional[datetime] = None,
+                 death_date: Optional[datetime] = None,
+                 relationships: Optional[List[str]] = None,
+                 created_at: Optional[datetime] = None,
+                 updated_at: Optional[datetime] = None,
+                 id: Optional[str] = None,
+                 created_by: Optional[str] = None,
+                 media_ids: Optional[List[str]] = None):
+        """
+        Initialize a person card.
+        
+        Args:
+            title (str): Person's title
+            description (str): Person's description
+            name (str, optional): Person's name (defaults to title if not provided)
+            birth_date (datetime, optional): When the person was born
+            death_date (datetime, optional): When the person died
+            relationships (List[str], optional): Relationships with other people
+            created_at (datetime, optional): When the card was created
+            updated_at (datetime, optional): When the card was last updated
+            id (str, optional): ID of the card
+            created_by (str, optional): Who created the card
+            media_ids (List[str], optional): IDs of associated media
+        """
+        super().__init__(title=title, description=description, id=id)
+        self.name = name or title
+        self.birth_date = birth_date
+        self.death_date = death_date
+        self.relationships = relationships or []
+        self.created_by = created_by
+        self.media_ids = media_ids or []
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
         
     def to_dict(self) -> Dict[str, Any]:
         """Convert the person card to a dictionary for storage."""
@@ -43,7 +79,7 @@ class PersonCard(BaseCard):
             'name': self.name,
             'birth_date': self.birth_date.isoformat() if self.birth_date else None,
             'death_date': self.death_date.isoformat() if self.death_date else None,
-            'relationships': {k: v for k, v in self.relationships.items()},
+            'relationships': self.relationships,
             'created_by': self.created_by,
             'media_ids': self.media_ids,
             'events': [event.to_dict() for event in self.events],
@@ -64,7 +100,7 @@ class PersonCard(BaseCard):
             id=data.get('id'),
             birth_date=datetime.fromisoformat(data['birth_date']) if data.get('birth_date') else None,
             death_date=datetime.fromisoformat(data['death_date']) if data.get('death_date') else None,
-            relationships={k: v for k, v in data.get('relationships', {}).items()},
+            relationships=data.get('relationships', []),
             created_by=data.get('created_by'),
             media_ids=data.get('media_ids', [])
         )

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass, field
 from .base_card import BaseCard
 
@@ -20,15 +20,47 @@ class PlaceCard(BaseCard):
     media: List['Media'] = field(default_factory=list)
     
     # Place-specific fields
+    location: str = ""
+    coordinates: Optional[Tuple[float, float]] = None
+    created_by: Optional[str] = None
+    media_ids: List[str] = field(default_factory=list)
     name: str = field(init=False)  # Will be set from title in post_init
     latitude: float = 0.0
     longitude: float = 0.0
     events: List['EventCard'] = field(default_factory=list)
     memories: List['MemoryCard'] = field(default_factory=list)
     
-    def __post_init__(self):
-        """Initialize the card after dataclass initialization."""
-        super().__post_init__()
+    def __init__(self,
+                 title: str,
+                 description: str,
+                 location: Optional[str] = None,
+                 coordinates: Optional[Tuple[float, float]] = None,
+                 created_at: Optional[datetime] = None,
+                 updated_at: Optional[datetime] = None,
+                 id: Optional[str] = None,
+                 created_by: Optional[str] = None,
+                 media_ids: Optional[List[str]] = None):
+        """
+        Initialize a place card.
+        
+        Args:
+            title (str): Place's title
+            description (str): Place's description
+            location (str, optional): Physical location of the place
+            coordinates (Tuple[float, float], optional): Latitude and longitude
+            created_at (datetime, optional): When the card was created
+            updated_at (datetime, optional): When the card was last updated
+            id (str, optional): ID of the card
+            created_by (str, optional): Who created the card
+            media_ids (List[str], optional): IDs of associated media
+        """
+        super().__init__(title=title, description=description, id=id)
+        self.location = location or ""
+        self.coordinates = coordinates
+        self.created_by = created_by
+        self.media_ids = media_ids or []
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
         self.name = self.title  # Set name from title
     
     def set_coordinates(self, latitude: float, longitude: float) -> None:

@@ -112,7 +112,7 @@ class DROECore:
             return []
     
     def create_event(self, title: str, description: str, location: Optional[str] = None,
-                    participants: Optional[List[str]] = None) -> EventCard:
+                    participants: Optional[List[str]] = None, emotions: Optional[List[str]] = None) -> EventCard:
         """
         Create a new event card.
         
@@ -121,6 +121,7 @@ class DROECore:
             description (str): Event's description
             location (Optional[str]): Where the event occurred
             participants (Optional[List[str]]): People involved in the event
+            emotions (Optional[List[str]]): Emotions associated with the event
             
         Returns:
             EventCard: The created event card
@@ -129,28 +130,30 @@ class DROECore:
             title=title,
             description=description,
             location=location,
-            participants=participants or []
+            participants=participants or [],
+            emotions=emotions or []
         )
         self.save_card(event)
         return event
     
-    def create_person(self, title: str, description: str, name: str) -> PersonCard:
+    def create_person(self, title: str, description: str, name: Optional[str] = None) -> PersonCard:
         """
         Create a new person card.
         
         Args:
             title (str): Person's title
             description (str): Person's description
-            name (str): Person's name
+            name (Optional[str]): Person's name (defaults to title if not provided)
             
         Returns:
             PersonCard: The created person card
         """
         person = PersonCard(
-            name=name,
             title=title,
             description=description
         )
+        if name:
+            person.name = name
         self.save_card(person)
         return person
     

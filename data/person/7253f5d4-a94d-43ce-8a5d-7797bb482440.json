@@ -1,0 +1,18 @@
+{
+  "id": "7253f5d4-a94d-43ce-8a5d-7797bb482440",
+  "title": "John Doe",
+  "description": "A test person",
+  "created_at": "2025-04-11T00:00:13.645312",
+  "updated_at": null,
+  "metadata": null,
+  "image_path": "",
+  "media": [],
+  "name": "John Doe",
+  "birth_date": null,
+  "death_date": null,
+  "relationships": {},
+  "created_by": null,
+  "media_ids": [],
+  "events": [],
+  "memories": []
+}

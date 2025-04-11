@@ -24,13 +24,50 @@ class MemoryCard(BaseCard):
     media: List['Media'] = field(default_factory=list)
     
     # Memory-specific fields
-    date: datetime = field(default_factory=datetime.now)
-    associated_event: Optional['EventCard'] = None
-    associated_people: List['PersonCard'] = field(default_factory=list)
-    associated_place: Optional['PlaceCard'] = None
-    associated_time_period: Optional['TimePeriodCard'] = None
-    emotion: Optional[str] = None
-    intensity: Optional[int] = None
+    date: Optional[datetime] = None
+    location: Optional[str] = None
+    people: List[str] = field(default_factory=list)
+    emotions: List[str] = field(default_factory=list)
+    created_by: Optional[str] = None
+    media_ids: List[str] = field(default_factory=list)
+    
+    def __init__(self,
+                 title: str,
+                 description: str,
+                 date: Optional[datetime] = None,
+                 location: Optional[str] = None,
+                 people: Optional[List[str]] = None,
+                 emotions: Optional[List[str]] = None,
+                 created_at: Optional[datetime] = None,
+                 updated_at: Optional[datetime] = None,
+                 id: Optional[str] = None,
+                 created_by: Optional[str] = None,
+                 media_ids: Optional[List[str]] = None):
+        """
+        Initialize a memory card.
+        
+        Args:
+            title (str): Memory's title
+            description (str): Memory's description
+            date (datetime, optional): When the memory occurred
+            location (str, optional): Where the memory occurred
+            people (List[str], optional): People involved in the memory
+            emotions (List[str], optional): Emotions associated with the memory
+            created_at (datetime, optional): When the card was created
+            updated_at (datetime, optional): When the card was last updated
+            id (str, optional): ID of the card
+            created_by (str, optional): Who created the card
+            media_ids (List[str], optional): IDs of associated media
+        """
+        super().__init__(title=title, description=description, id=id)
+        self.date = date
+        self.location = location
+        self.people = people or []
+        self.emotions = emotions or []
+        self.created_by = created_by
+        self.media_ids = media_ids or []
+        self.created_at = created_at or datetime.now()
+        self.updated_at = updated_at or datetime.now()
     
     def set_event(self, event: 'EventCard') -> None:
         """Set the associated event."""
@@ -86,7 +123,7 @@ class MemoryCard(BaseCard):
             title=data['title'],
             description=data['description'],
             id=data.get('id'),
-            date=datetime.fromisoformat(data['date']) if 'date' in data else datetime.now()
+            date=datetime.fromisoformat(data['date']) if 'date' in data else None
         )
         
         # Set base card attributes

@@ -38,20 +38,24 @@ class EventCard(BaseCard):
                  emotions: Optional[List[str]] = None,
                  created_at: Optional[datetime] = None,
                  updated_at: Optional[datetime] = None,
-                 id: Optional[str] = None):
+                 id: Optional[str] = None,
+                 created_by: Optional[str] = None,
+                 media_ids: Optional[List[str]] = None):
         """
         Initialize an event card.
         
         Args:
-            title (str): Event title
-            description (str): Event description
+            title (str): Event's title
+            description (str): Event's description
             date (datetime, optional): When the event occurred
             location (str, optional): Where the event occurred
-            participants (List[str], optional): People involved in the event
+            participants (List[str], optional): Who participated in the event
             emotions (List[str], optional): Emotions associated with the event
             created_at (datetime, optional): When the card was created
             updated_at (datetime, optional): When the card was last updated
             id (str, optional): ID of the card
+            created_by (str, optional): Who created the card
+            media_ids (List[str], optional): IDs of associated media
         """
         super().__init__(title=title, description=description, id=id)
         self.date = date

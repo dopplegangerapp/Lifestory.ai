@@ -16,11 +16,13 @@ app.config.update(
     SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-secret-key'),
     SESSION_COOKIE_SECURE=False,  # Allow HTTP in development
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax'
+    SESSION_COOKIE_SAMESITE='Lax',
+    TESTING=True,
+    SQLALCHEMY_DATABASE_URI='sqlite:///instance/droecore.db',
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
+app.url_map.strict_slashes = False
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///droecore.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Import and register routes

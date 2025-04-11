@@ -1,0 +1,19 @@
+{
+  "id": "608d7608-957a-41b4-bf63-6c069b7c6fc2",
+  "title": "Graduation ceremony",
+  "description": "A test event",
+  "created_at": "2025-04-11T00:03:29.065050",
+  "updated_at": "2025-04-11T00:03:29.065050",
+  "metadata": null,
+  "image_path": "",
+  "media": [],
+  "date": null,
+  "location": "School",
+  "participants": [
+    "John",
+    "Jane"
+  ],
+  "emotions": [],
+  "created_by": null,
+  "media_ids": []
+}
