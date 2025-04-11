@@ -43,35 +43,35 @@ def create_interview_ui():
                     st.error(f"Connection error: {str(e)}")
         else:
             answer = st.text_area("Your answer:", key="answer_input", height=100, max_chars=1000)
-            if st.button("Continue", use_container_width=True) and answer:
+            
+            # Only show the continue button if there's an answer
+            if answer and st.button("Continue", use_container_width=True):
                 try:
                     response = requests.post(
                         "http://0.0.0.0:5000/interview",
                         json={"answer": answer}
                     )
+                    
                     if response.status_code == 200:
                         data = response.json()
-                        follow_up = data.get("follow_up")
-                        next_question = data.get("next_question")
                         
                         # Store the answer
                         st.session_state.answers.append(answer)
                         
-                        # Update progress
+                        # Update progress if provided
                         if "progress" in data:
                             st.session_state.progress = float(data.get("progress", 0)) / 100
-                            
+                        
                         # Update stage if provided
                         if "current_stage" in data:
                             st.session_state.stage = data["current_stage"]
-                            
-                        # Show follow-up if available
-                        if follow_up:
-                            st.info(follow_up)
-                            
-                        # Set next question or complete
+                        
+                        # Handle next question or completion
+                        next_question = data.get("next_question")
                         if next_question:
                             st.session_state.current_question = next_question
+                            # Clear the previous answer
+                            st.session_state.answer_input = ""
                             st.rerun()
                         elif data.get("completed", False):
                             st.success("Interview completed!")
