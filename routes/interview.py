@@ -154,8 +154,7 @@ def process_interview():
                 title=event_data.get('title', ''),
                 description=event_data.get('description', ''),
                 location=event_data.get('location'),
-                participants=event_data.get('participants', []),
-                emotions=event_data.get('emotions', [])
+                participants=event_data.get('participants', [])
             )
             cards.append(event)
         
