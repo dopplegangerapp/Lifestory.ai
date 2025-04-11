@@ -20,9 +20,18 @@ def render():
     try:
         if not st.session_state.started:
             if st.button("Start Interview", use_container_width=True):
-                response = requests.get("http://0.0.0.0:5000/interview")
-                if response.status_code == 200:
-                    data = response.json()
+                try:
+                    response = requests.get("http://0.0.0.0:5000/interview", timeout=5)
+                    st.write(f"Debug - Response status: {response.status_code}")
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.write(f"Debug - Response data: {data}")
+                except requests.exceptions.ConnectionError:
+                    st.error("Failed to connect to backend server. Please ensure the API is running.")
+                    return
+                except Exception as e:
+                    st.error(f"Unexpected error: {str(e)}")
+                    return
                     st.session_state.started = True
                     st.session_state.current_question = data.get("question")
                     st.session_state.stage = data.get("current_stage")

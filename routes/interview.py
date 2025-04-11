@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, request, session
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -43,7 +42,7 @@ class InterviewStage:
     def from_dict(cls, data: Dict) -> 'InterviewStage':
         if not isinstance(data, dict):
             raise ValueError("Invalid data format for InterviewStage")
-        
+
         instance = cls()
         instance.current_stage = data.get("current_stage", "welcome")
         instance.current_question_index = data.get("current_question_index", 0)
@@ -58,7 +57,7 @@ class InterviewStage:
             return True
 
         current_stage_questions = INTERVIEW_QUESTIONS.get(self.current_stage, [])
-        
+
         if self.current_question_index < len(current_stage_questions) - 1:
             self.current_question_index += 1
             return False
@@ -97,7 +96,7 @@ class InterviewStage:
 
         completed_questions = 0
         stages = list(INTERVIEW_QUESTIONS.keys())
-        
+
         try:
             current_stage_index = stages.index(self.current_stage)
         except ValueError:
@@ -114,30 +113,35 @@ class InterviewStage:
 
 @interview_bp.route('/', methods=['GET'])
 def get_question():
+    print("Debug - Received GET request for initial question")
     try:
         if 'interview_stage' not in session:
             session['interview_stage'] = InterviewStage().to_dict()
-        
+
         stage = InterviewStage.from_dict(session['interview_stage'])
 
         if stage.completed:
-            return jsonify({
+            response = {
                 "question": "Thank you for sharing your story!",
                 "completed": True,
                 "current_stage": stage.current_stage,
                 "progress": 100
-            })
+            }
+            print(f"Debug - Sending response: {response}")
+            return jsonify(response)
 
         question_data = stage.get_current_question()
         if not question_data:
             return jsonify({"error": "No question available"}), 400
 
         session['interview_stage'] = stage.to_dict()
-        return jsonify({
+        response = {
             "question": question_data["question"],
             "current_stage": stage.current_stage,
             "progress": stage.get_progress()
-        })
+        }
+        print(f"Debug - Sending response: {response}")
+        return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
