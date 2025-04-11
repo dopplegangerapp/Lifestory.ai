@@ -11,6 +11,19 @@ from .time_period_card import TimePeriodCard
 class MemoryCard(BaseCard):
     """Card representing a memory in the DROE Core system."""
     
+    # Required fields from BaseCard
+    title: str
+    description: str
+    
+    # Optional fields from BaseCard
+    id: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
+    metadata: Optional[dict] = None
+    image_path: str = ""
+    media: List['Media'] = field(default_factory=list)
+    
+    # Memory-specific fields
     date: datetime = field(default_factory=datetime.now)
     associated_event: Optional['EventCard'] = None
     associated_people: List['PersonCard'] = field(default_factory=list)
@@ -19,47 +32,32 @@ class MemoryCard(BaseCard):
     emotion: Optional[str] = None
     intensity: Optional[int] = None
     
-    def __init__(self,
-                 title: str,
-                 description: str,
-                 date: datetime,
-                 emotion: Optional[str] = None,
-                 intensity: Optional[int] = None,
-                 associated_event: Optional[int] = None,
-                 associated_people: Optional[List[int]] = None,
-                 associated_place: Optional[int] = None,
-                 created_at: Optional[datetime] = None,
-                 updated_at: Optional[datetime] = None,
-                 id: Optional[int] = None):
-        super().__init__(title, description, created_at, updated_at, id)
-        self.date = date
-        self.emotion = emotion
-        self.intensity = intensity
-        self.associated_event = associated_event
-        self.associated_people = associated_people or []
-        self.associated_place = associated_place
-    
     def set_event(self, event: 'EventCard') -> None:
         """Set the associated event."""
         self.associated_event = event
+        self.updated_at = datetime.now()
     
     def add_person(self, person: 'PersonCard') -> None:
         """Add a person to the memory."""
         if person not in self.associated_people:
             self.associated_people.append(person)
+            self.updated_at = datetime.now()
     
     def set_place(self, place: 'PlaceCard') -> None:
         """Set the associated place."""
         self.associated_place = place
+        self.updated_at = datetime.now()
     
     def set_time_period(self, time_period: 'TimePeriodCard') -> None:
         """Set the associated time period."""
         self.associated_time_period = time_period
+        self.updated_at = datetime.now()
     
     def set_emotion(self, emotion: str, intensity: int) -> None:
         """Set the emotion and its intensity."""
         self.emotion = emotion
         self.intensity = max(0, min(10, intensity))  # Ensure intensity is between 0 and 10
+        self.updated_at = datetime.now()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the memory to a dictionary."""
@@ -83,15 +81,15 @@ class MemoryCard(BaseCard):
         from .place_card import PlaceCard
         from .time_period_card import TimePeriodCard
         
-        # Create base card first
+        # Create memory card
         memory = cls(
             title=data['title'],
             description=data['description'],
+            id=data.get('id'),
             date=datetime.fromisoformat(data['date']) if 'date' in data else datetime.now()
         )
         
         # Set base card attributes
-        memory.id = data.get('id')
         memory.created_at = datetime.fromisoformat(data['created_at']) if 'created_at' in data else datetime.now()
         memory.updated_at = datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else None
         memory.metadata = data.get('metadata', {})

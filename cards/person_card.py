@@ -7,28 +7,35 @@ from .base_card import BaseCard
 class PersonCard(BaseCard):
     """Card representing a person in the DROE Core system."""
     
-    # Required fields
-    name: str
+    # Required fields from BaseCard
+    title: str
     description: str
-    id: Optional[str] = None
     
-    # Optional fields
+    # Required fields for PersonCard
+    name: str = field(init=False)  # Will be set from title in post_init
+    
+    # Optional fields from BaseCard
+    id: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
+    metadata: Optional[dict] = None
+    image_path: str = ""
+    media: List['Media'] = field(default_factory=list)
+    
+    # Optional fields for PersonCard
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
     relationships: Dict[str, List[str]] = field(default_factory=dict)
     created_by: Optional[str] = None
     media_ids: List[str] = field(default_factory=list)
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    events: List['EventCard'] = field(default_factory=list)
+    memories: List['MemoryCard'] = field(default_factory=list)
     
     def __post_init__(self):
         """Initialize the card after dataclass initialization."""
-        if self.created_at is None:
-            self.created_at = datetime.now()
-        if self.updated_at is None:
-            self.updated_at = datetime.now()
-        super().__init__(title=self.name, description=self.description, id=self.id)
-    
+        super().__post_init__()
+        self.name = self.title  # Set name from title
+        
     def to_dict(self) -> Dict[str, Any]:
         """Convert the person card to a dictionary for storage."""
         data = super().to_dict()
@@ -50,9 +57,9 @@ class PersonCard(BaseCard):
         from .event_card import EventCard
         from .memory_card import MemoryCard
         
-        # Create base card first
+        # Create person card
         person = cls(
-            name=data['title'],
+            title=data['title'],
             description=data['description'],
             id=data.get('id'),
             birth_date=datetime.fromisoformat(data['birth_date']) if data.get('birth_date') else None,

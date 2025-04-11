@@ -9,6 +9,19 @@ from .time_period_card import TimePeriodCard
 class EventCard(BaseCard):
     """Card representing an event in the DROE Core system."""
     
+    # Required fields from BaseCard
+    title: str
+    description: str
+    
+    # Optional fields from BaseCard
+    id: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
+    metadata: Optional[dict] = None
+    image_path: str = ""
+    media: List['Media'] = field(default_factory=list)
+    
+    # Event-specific fields
     date: Optional[datetime] = None
     location: Optional[str] = None
     participants: List[str] = field(default_factory=list)
@@ -70,26 +83,24 @@ class EventCard(BaseCard):
         from .place_card import PlaceCard
         from .time_period_card import TimePeriodCard
         
-        # Create base card first
+        # Create event card
         event = cls(
             title=data['title'],
             description=data['description'],
+            id=data.get('id'),
             date=datetime.fromisoformat(data['date']) if data.get('date') else None,
             location=data.get('location'),
             participants=data.get('participants', []),
-            emotions=data.get('emotions', [])
+            emotions=data.get('emotions', []),
+            created_by=data.get('created_by'),
+            media_ids=data.get('media_ids', [])
         )
         
         # Set base card attributes
-        event.id = data.get('id')
         event.created_at = datetime.fromisoformat(data['created_at']) if 'created_at' in data else datetime.now()
         event.updated_at = datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else None
         event.metadata = data.get('metadata', {})
         event.image_path = data.get('image_path', '')
-        
-        # Set event-specific attributes
-        event.created_by = data.get('created_by')
-        event.media_ids = data.get('media_ids', [])
         
         return event
     

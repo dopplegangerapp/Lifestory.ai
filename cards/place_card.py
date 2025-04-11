@@ -7,44 +7,29 @@ from .base_card import BaseCard
 class PlaceCard(BaseCard):
     """Card representing a place in the DROE Core system."""
     
-    name: str = ""
+    # Required fields from BaseCard
+    title: str
+    description: str
+    
+    # Optional fields from BaseCard
+    id: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
+    metadata: Optional[dict] = None
+    image_path: str = ""
+    media: List['Media'] = field(default_factory=list)
+    
+    # Place-specific fields
+    name: str = field(init=False)  # Will be set from title in post_init
     latitude: float = 0.0
     longitude: float = 0.0
     events: List['EventCard'] = field(default_factory=list)
     memories: List['MemoryCard'] = field(default_factory=list)
     
-    def __init__(self,
-                 title: str,
-                 description: str,
-                 name: str,
-                 latitude: float = 0.0,
-                 longitude: float = 0.0,
-                 events: Optional[List['EventCard']] = None,
-                 memories: Optional[List['MemoryCard']] = None,
-                 created_at: Optional[datetime] = None,
-                 updated_at: Optional[datetime] = None,
-                 id: Optional[str] = None):
-        """
-        Initialize a place card.
-        
-        Args:
-            title (str): Place's title
-            description (str): Place's description
-            name (str): Place's name
-            latitude (float, optional): Place's latitude
-            longitude (float, optional): Place's longitude
-            events (List[EventCard], optional): Events at this place
-            memories (List[MemoryCard], optional): Memories about this place
-            created_at (datetime, optional): When the card was created
-            updated_at (datetime, optional): When the card was last updated
-            id (str, optional): ID of the card
-        """
-        super().__init__(title=title, description=description, id=id)
-        self.name = name
-        self.latitude = latitude
-        self.longitude = longitude
-        self.events = events or []
-        self.memories = memories or []
+    def __post_init__(self):
+        """Initialize the card after dataclass initialization."""
+        super().__post_init__()
+        self.name = self.title  # Set name from title
     
     def set_coordinates(self, latitude: float, longitude: float) -> None:
         """Set the coordinates of the place."""
@@ -82,17 +67,16 @@ class PlaceCard(BaseCard):
         from .event_card import EventCard
         from .memory_card import MemoryCard
         
-        # Create base card first
+        # Create place card
         place = cls(
             title=data['title'],
             description=data['description'],
-            name=data.get('name', ''),
+            id=data.get('id'),
             latitude=data.get('latitude', 0.0),
             longitude=data.get('longitude', 0.0)
         )
         
         # Set base card attributes
-        place.id = data.get('id')
         place.created_at = datetime.fromisoformat(data['created_at']) if 'created_at' in data else datetime.now()
         place.updated_at = datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else None
         place.metadata = data.get('metadata', {})
