@@ -22,8 +22,8 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
+env/
 
 # IDE
 .idea/
@@ -31,14 +31,19 @@ ENV/
 *.swp
 *.swo
 
+# Database
+*.db
+*.sqlite3
+
+# Flask
+flask_session/
+
 # Logs
 *.log
-logs/
 
-# Local development
+# Environment variables
 .env
 .env.local
-.env.*.local
 
 # Test coverage
 .coverage
@@ -47,9 +52,7 @@ htmlcov/
 
 # Storage
 storage/
-*.db
 *.sqlite
-*.sqlite3
 
 # Media files
 media/

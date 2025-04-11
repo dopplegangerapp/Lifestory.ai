@@ -7,11 +7,10 @@ import os
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./app.db')
 engine = create_engine(DATABASE_URL)
 
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 # Create tables
 def init_db():
-    """Initialize database connection and create tables"""
     Base.metadata.create_all(bind=engine)
-    return SessionLocal
+
+if __name__ == '__main__':
+    init_db()
+    print("Database initialized successfully") 

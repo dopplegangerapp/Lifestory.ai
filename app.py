@@ -19,6 +19,127 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS for dark theme
+st.markdown("""
+    <style>
+    .main {
+        background-color: #000000;
+        color: #ffffff;
+    }
+    .stApp {
+        background-color: #000000;
+    }
+    /* Make all text white */
+    .stMarkdown, .stText, .stTextInput, .stTextArea, .stButton, .stProgress {
+        color: #ffffff !important;
+    }
+    /* Make headers and labels more visible */
+    h1, h2, h3, h4, h5, h6, label {
+        color: #ffffff !important;
+    }
+    /* Make expander headers visible */
+    .streamlit-expanderHeader {
+        color: #ffffff !important;
+    }
+    .stButton>button {
+        background-color: #1a1a1a;
+        color: #00a8ff;
+        border: 2px solid #00a8ff;
+        border-radius: 5px;
+        padding: 0.5rem 1rem;
+        font-size: 1.1em;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #00a8ff;
+        color: #000000;
+    }
+    .stTextArea>div>div>textarea {
+        background-color: #1a1a1a;
+        color: #ffffff;
+        border: 2px solid #00a8ff;
+        border-radius: 5px;
+    }
+    .droe-orb {
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle at center, #00a8ff 0%, #000000 70%);
+        border-radius: 50%;
+        margin: 2rem auto;
+        box-shadow: 0 0 30px #00a8ff;
+        animation: pulse 2s infinite;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    .droe-orb::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, rgba(0, 168, 255, 0.5) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: glow 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 30px #00a8ff; }
+        50% { transform: scale(1.05); box-shadow: 0 0 50px #00a8ff; }
+        100% { transform: scale(1); box-shadow: 0 0 30px #00a8ff; }
+    }
+    @keyframes glow {
+        0% { opacity: 0.5; }
+        50% { opacity: 0.8; }
+        100% { opacity: 0.5; }
+    }
+    .question-box {
+        background-color: #1a1a1a;
+        border: 2px solid #00a8ff;
+        border-radius: 10px;
+        padding: 2rem;
+        margin: 1rem 0;
+        color: #ffffff;
+    }
+    .progress-box {
+        background-color: #1a1a1a;
+        border: 2px solid #00a8ff;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        color: #ffffff;
+    }
+    .timeline-event {
+        background-color: #1a1a1a;
+        border: 2px solid #00a8ff;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        color: #ffffff;
+    }
+    /* Make success and warning messages more visible */
+    .stAlert {
+        background-color: #1a1a1a !important;
+        border: 2px solid #00a8ff !important;
+        color: #ffffff !important;
+    }
+    .stSuccess {
+        background-color: #1a1a1a !important;
+        border: 2px solid #00ff00 !important;
+        color: #ffffff !important;
+    }
+    .stWarning {
+        background-color: #1a1a1a !important;
+        border: 2px solid #ffff00 !important;
+        color: #ffffff !important;
+    }
+    .stError {
+        background-color: #1a1a1a !important;
+        border: 2px solid #ff0000 !important;
+        color: #ffffff !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
 if 'page' not in st.session_state:
     st.session_state.page = "home"
@@ -64,12 +185,11 @@ def submit_answer(answer):
         return None
 
 def main():
-    # Add custom styles
-    add_custom_styles()
-
     # Create layout
     st.markdown("""
-        <div class="header">Lifestory.ai</div>
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="color: #00a8ff;">Lifestory.ai</h1>
+        </div>
     """, unsafe_allow_html=True)
 
     # Show buttons only when not in interview mode
@@ -97,14 +217,21 @@ def main():
         if interview_data:
             st.session_state.interview_data = interview_data
             
+            # DROE Orb
+            st.markdown('<div class="droe-orb"></div>', unsafe_allow_html=True)
+            
             # Display current question
+            st.markdown('<div class="question-box">', unsafe_allow_html=True)
             st.write(f"**Question:** {interview_data['question']}")
             if interview_data.get('context'):
                 st.write(f"*{interview_data['context']}*")
+            st.markdown('</div>', unsafe_allow_html=True)
             
             # Display progress
+            st.markdown('<div class="progress-box">', unsafe_allow_html=True)
             st.progress(interview_data['progress'] / 100)
             st.write(f"Progress: {interview_data['progress']:.1f}%")
+            st.markdown('</div>', unsafe_allow_html=True)
             
             # Answer input
             answer = st.text_area("Your answer:", key="answer_input")

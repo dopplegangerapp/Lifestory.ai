@@ -7,7 +7,7 @@ from cards.memory_card import MemoryCard
 from cards.person_card import PersonCard
 from cards.place_card import PlaceCard
 from cards.base_card import BaseCard
-from db.session import save_card, DatabaseError
+from db.utils import save_card
 from db import SessionLocal
 from db.session_db import session_db
 import re
@@ -15,7 +15,7 @@ import logging
 import uuid
 from core import DROECore
 from utils.logger import get_logger
-from services.openai_service import openai_service
+from services.openai_service import OpenAIService
 from models.interview_stage import InterviewStage
 from services.event_card_service import create_event_card
 
@@ -25,269 +25,324 @@ logger = logging.getLogger(__name__)
 
 interview_bp = Blueprint('interview', __name__)
 core = DROECore()
+openai_service = OpenAIService()
 
-@interview_bp.route('/interview', methods=['GET'], strict_slashes=False)
+@interview_bp.route('/interview', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def get_interview():
-    """Get the current interview state."""
+    """Get the current interview question."""
     try:
-        logger.info("GET /interview called")
-        
-        # Get session ID from request
-        session_id = request.cookies.get('session_id')
+        # Get or create session ID
+        session_id = request.cookies.get('session')
         if not session_id:
             session_id = str(uuid.uuid4())
-            logger.info(f"Created new session ID: {session_id}")
+            session['session_id'] = session_id
         
-        # Get interview stage from database
-        stage = None
-        session_data = session_db.get_session(session_id)
-        if session_data and 'interview_stage' in session_data:
-            try:
-                logger.info("Loading existing interview stage")
-                stage = InterviewStage.from_dict(session_data['interview_stage'])
-                logger.info(f"Loaded stage: {stage.to_dict()}")
-            except (ValueError, KeyError, TypeError) as e:
-                logger.error(f"Invalid session data: {str(e)}")
-                stage = None
+        # Get current stage
+        current_stage = session.get('stage', 'start')
         
-        # If no valid stage in session, create new one
-        if not stage:
-            logger.info("Creating new interview stage")
-            stage = InterviewStage()
-            session_data = {'interview_stage': stage.to_dict()}
-            session_db.save_session(session_id, session_data)
-            logger.info(f"Saved new stage: {stage.to_dict()}")
-        
-        # Get current question from OpenAI
-        next_question = openai_service.get_next_question({
-            "answers": stage.answers,
-            "current_stage": stage.current_stage
+        # Get next question based on stage
+        question = openai_service.get_next_question({
+            'stage': current_stage,
+            'context': session.get('context', {})
         })
         
-        # Update stage with new question
-        stage.current_question = next_question["question"]
-        stage.current_stage = next_question["stage"]
+        response = jsonify({
+            'success': True,
+            'question': question,
+            'stage': current_stage,
+            'session_id': session_id
+        })
         
-        # Save updated stage
-        session_data = {'interview_stage': stage.to_dict()}
-        session_db.save_session(session_id, session_data)
-            
-        response = {
-            "success": True,
-            "question": next_question["question"],
-            "current_stage": next_question["stage"],
-            "progress": stage.get_progress(),
-            "completed": stage.completed,
-            "context": next_question.get("context", "")
-        }
-        logger.info(f"Returning interview state: {response}")
-        
-        # Set session cookie if not already set
-        resp = jsonify(response)
-        if not request.cookies.get('session_id'):
-            resp.set_cookie(
-                'session_id',
-                session_id,
-                secure=True,
-                httponly=True,
-                samesite='Lax',
-                max_age=3600,
-                path='/'
-            )
-        return resp
+        # Set session cookie
+        response.set_cookie('session', session_id)
+        return response
         
     except Exception as e:
-        logger.error(f"Error getting interview: {str(e)}")
+        logger.error(f"Error in get_interview: {str(e)}")
         return jsonify({
-            "error": "Internal server error",
-            "details": str(e)
+            'error': 'Internal server error',
+            'details': str(e)
         }), 500
 
-def create_event_card(answer_data: Dict) -> Dict:
-    """Create an event card from the answer data."""
+def extract_location(answer: str) -> str:
+    """Extract location from answer text."""
+    # Look for common location patterns
+    location_patterns = [
+        r'in ([^\.]+)',  # "in Portland, Oregon"
+        r'from ([^\.]+)',  # "from New York City"
+        r'at ([^\.]+)',  # "at 123 Main Street"
+        r'to ([^\.]+)',  # "moved to Chicago"
+        r'born in ([^\.]+)'  # "born in Los Angeles"
+    ]
+    
+    for pattern in location_patterns:
+        match = re.search(pattern, answer)
+        if match:
+            return match.group(1).strip()
+    
+    # If no pattern matches, return the first sentence
+    return answer.split('.')[0].strip()
+
+@interview_bp.route('/interview', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def submit_answer():
+    """Submit an answer to the current question."""
     try:
-        # Extract relevant information from the answer
-        description = answer_data.get('answer', '')
-        question = answer_data.get('question', '')
+        # Get session ID from cookie
+        session_id = request.cookies.get('session')
+        if not session_id:
+            return jsonify({
+                'error': 'No session cookie found'
+            }), 401
         
-        # Determine card type based on question content
+        # Validate request
+        if not request.is_json:
+            return jsonify({
+                'error': 'Content-Type must be application/json'
+            }), 400
+        
+        # Get answer from request
+        data = request.get_json()
+        if 'answer' not in data:
+            return jsonify({
+                'error': 'Missing answer in request body'
+            }), 400
+            
+        answer = data['answer']
+        
+        # Get current stage
+        current_stage = session.get('stage', 'start')
+        
+        # Get database session
+        db = SessionLocal()
+        
+        try:
+            # Process answer based on stage
+            if current_stage == 'start':
+                # Extract location from answer
+                location = extract_location(answer)
+                
+                # Create place card
+                card = {
+                    'id': str(uuid.uuid4()),
+                    'type': 'place',
+                    'title': f'Place: {location}',
+                    'description': answer,
+                    'date': datetime.now().isoformat(),
+                    'image_url': None,
+                    'session_id': session_id,
+                    'location': location
+                }
+                
+                # Generate image
+                image_url = openai_service.generate_image(f"A place called {location}: {answer}")
+                if image_url:
+                    card['image_url'] = image_url
+                
+                # Save card to database
+                save_card(db, card, session_id)
+                
+                # Update context
+                session['context'] = {
+                    'place': location,
+                    'stage': 'family'
+                }
+                session['stage'] = 'family'
+                
+            elif current_stage == 'family':
+                # Extract people from answer
+                people = extract_people(answer)
+                
+                # Create person card
+                card = {
+                    'id': str(uuid.uuid4()),
+                    'type': 'person',
+                    'title': f'Family: {", ".join(people)}',
+                    'description': answer,
+                    'date': datetime.now().isoformat(),
+                    'image_url': None,
+                    'session_id': session_id,
+                    'people': people
+                }
+                
+                # Generate image
+                image_url = openai_service.generate_image(f"A family portrait with {', '.join(people)}")
+                if image_url:
+                    card['image_url'] = image_url
+                
+                # Save card to database
+                save_card(db, card, session_id)
+                
+                # Update context
+                session['context'].update({
+                    'family': people,
+                    'stage': 'events'
+                })
+                session['stage'] = 'events'
+                
+            elif current_stage == 'events':
+                # Extract date from answer
+                date = extract_date(answer)
+                
+                # Create event card
+                card = {
+                    'id': str(uuid.uuid4()),
+                    'type': 'event',
+                    'title': 'Important Event',
+                    'description': answer,
+                    'date': date.isoformat() if date else datetime.now().isoformat(),
+                    'image_url': None,
+                    'session_id': session_id
+                }
+                
+                # Generate image
+                image_url = openai_service.generate_image(answer)
+                if image_url:
+                    card['image_url'] = image_url
+                
+                # Save card to database
+                save_card(db, card, session_id)
+                
+                # Update context
+                session['context'].update({
+                    'events': answer,
+                    'stage': 'memories'
+                })
+                session['stage'] = 'memories'
+                
+            else:  # memories stage
+                # Create memory card
+                card = {
+                    'id': str(uuid.uuid4()),
+                    'type': 'memory',
+                    'title': 'Memory',
+                    'description': answer,
+                    'date': datetime.now().isoformat(),
+                    'image_url': None,
+                    'session_id': session_id
+                }
+                
+                # Generate image
+                image_url = openai_service.generate_image(answer)
+                if image_url:
+                    card['image_url'] = image_url
+                
+                # Save card to database
+                save_card(db, card, session_id)
+                
+                # Update context
+                session['context'].update({
+                    'memories': answer,
+                    'stage': 'complete'
+                })
+                session['stage'] = 'complete'
+            
+            # Get next question
+            question = openai_service.get_next_question({
+                'stage': session['stage'],
+                'context': session['context']
+            })
+            
+            response = jsonify({
+                'success': True,
+                'question': question,
+                'stage': session['stage']
+            })
+            
+            # Set session cookie
+            response.set_cookie('session', session_id)
+            return response
+            
+        finally:
+            db.close()
+            
+    except Exception as e:
+        logger.error(f"Error in submit_answer: {str(e)}")
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
+
+def create_card_from_answer(answer: str, question: str, stage: str) -> dict:
+    """Create a card from the answer data."""
+    try:
+        # Determine card type based on question content and answer
         card_type = 'memory'  # Default type
         
-        if 'parents' in question.lower() or 'siblings' in question.lower():
-            card_type = 'person'
-        elif 'place' in question.lower() or 'where' in question.lower():
+        # Check for place indicators
+        if ('born' in answer.lower() or 'grew up' in answer.lower() or 
+            'lived' in answer.lower() or 'city' in answer.lower() or
+            'town' in answer.lower() or 'country' in answer.lower()):
             card_type = 'place'
+            
+        # Check for person indicators
+        elif ('mother' in answer.lower() or 'father' in answer.lower() or
+              'parent' in answer.lower() or 'sister' in answer.lower() or
+              'brother' in answer.lower() or 'family member' in answer.lower()):
+            card_type = 'person'
+            
+        # Check for event indicators
+        elif ('graduated' in answer.lower() or 'wedding' in answer.lower() or
+              'birthday' in answer.lower() or 'ceremony' in answer.lower() or
+              any(year in answer for year in [str(y) for y in range(1900, 2100)])):
+            card_type = 'event'
             
         # Create the card
         card = {
-            'title': question,
-            'description': description,
+            'id': str(uuid.uuid4()),
             'type': card_type,
-            'date': datetime.now().isoformat(),
-            'image_url': None  # This would be generated by an image service
+            'title': question,
+            'description': answer,
+            'date': datetime.now().isoformat(),  # Store as ISO format string
+            'session_id': request.cookies.get('session'),
+            'created_at': datetime.now().isoformat()  # Store as ISO format string
         }
         
-        return card
-    except Exception as e:
-        logger.error(f"Error creating event card: {str(e)}")
-        return None
-
-@interview_bp.route('/interview', methods=['POST'], strict_slashes=False)
-@cross_origin(supports_credentials=True)
-def submit_answer():
-    """Submit an answer to the current interview question."""
-    try:
-        logger.info("POST /interview called")
-        
-        # Get session ID from request
-        session_id = request.cookies.get('session_id')
-        if not session_id:
-            session_id = str(uuid.uuid4())
-            logger.info(f"Created new session ID: {session_id}")
-        
-        # Check if request has JSON content type
-        if not request.is_json:
-            return jsonify({
-                "error": "Request must have application/json content type"
-            }), 400
-        
-        # Try to parse JSON data
-        try:
-            data = request.get_json()
-            logger.info(f"Received answer data: {data}")
-        except Exception as e:
-            return jsonify({
-                "error": "Invalid JSON format",
-                "details": str(e)
-            }), 400
-        
-        # Validate required fields
-        if not data:
-            return jsonify({
-                "error": "Empty request body"
-            }), 400
+        # Add type-specific fields
+        if card_type == 'place':
+            # Extract location from answer
+            location_match = re.search(r'(?:in|from|at)\s+([^\.]+)', answer)
+            if location_match:
+                location = location_match.group(1).strip()
+            else:
+                location = answer.split('.')[0].strip()
+            card['location'] = location
             
-        if 'answer' not in data:
-            return jsonify({
-                "error": "Missing required field: answer"
-            }), 400
+        elif card_type == 'person':
+            # Extract people from answer
+            people = []
+            if 'mother' in answer.lower():
+                people.append('mother')
+            if 'father' in answer.lower():
+                people.append('father')
+            if 'sister' in answer.lower():
+                people.append('sister')
+            if 'brother' in answer.lower():
+                people.append('brother')
+            card['people'] = people
             
-        # Validate answer
-        answer = data['answer']
-        if not isinstance(answer, str):
-            return jsonify({
-                "error": "Answer must be a string"
-            }), 400
+        elif card_type == 'event':
+            # Extract date from answer
+            date_match = re.search(r'\b\d{4}\b', answer)
+            if date_match:
+                year = int(date_match.group(0))
+                card['date'] = datetime(year, 1, 1).isoformat()  # Store as ISO format string
             
-        if not answer.strip():
-            return jsonify({
-                "success": False,
-                "error": "Answer cannot be empty"
-            }), 400
-            
-        # Get interview stage from database
-        stage = None
-        session_data = session_db.get_session(session_id)
-        if session_data and 'interview_stage' in session_data:
-            try:
-                logger.info("Loading existing interview stage")
-                stage = InterviewStage.from_dict(session_data['interview_stage'])
-                logger.info(f"Loaded stage: {stage.to_dict()}")
-            except (ValueError, KeyError, TypeError) as e:
-                logger.error(f"Invalid session data: {str(e)}")
-                stage = None
-        
-        # If no valid stage in session, create new one
-        if not stage:
-            logger.info("Creating new interview stage")
-            stage = InterviewStage()
-        
-        # Check if interview is completed
-        if stage.completed:
-            return jsonify({
-                "error": "Interview already completed"
-            }), 400
-            
-        # Initialize response
-        response = {
-            "success": True,
-            "completed": False
-        }
-            
-        # Process answer with OpenAI
-        openai_result = openai_service.process_interview_answer(
-            stage.current_question,
-            answer.strip(),
-            {"answers": stage.answers}
-        )
-        
-        # Store the answer with OpenAI analysis
-        answer_data = {
-            "question": stage.current_question,
-            "answer": answer.strip(),
-            "timestamp": datetime.now().isoformat(),
-            "openai_analysis": openai_result
-        }
-        stage.answers.append(answer_data)
-        
-        # Create event card from answer
-        card = create_event_card({
-            "question": stage.current_question,
-            "answer": answer.strip()
-        })
-        
-        # If OpenAI suggests a follow-up, use it
-        if openai_result.get("needs_follow_up") and openai_result.get("suggested_follow_up"):
-            next_question = {
-                "question": openai_result["suggested_follow_up"],
-                "stage": stage.current_stage,
-                "context": "Follow-up question based on previous answer"
-            }
+        # Generate image
+        image_prompt = f"A beautiful, artistic representation of {answer}. {question}"
+        image_url = openai_service.generate_image(image_prompt)
+        if image_url:
+            card['image_url'] = image_url
         else:
-            # Generate next question from OpenAI
-            next_question = openai_service.get_next_question({
-                "answers": stage.answers,
-                "current_stage": stage.current_stage
-            })
-        
-        # Update stage with new question
-        stage.current_question = next_question["question"]
-        stage.current_stage = next_question["stage"]
-        
-        # Save updated stage
-        session_data = {'interview_stage': stage.to_dict()}
-        session_db.save_session(session_id, session_data)
-        
-        response.update({
-            "next_question": next_question["question"],
-            "current_stage": next_question["stage"],
-            "progress": stage.get_progress(),
-            "context": next_question.get("context", ""),
-            "is_follow_up": openai_result.get("needs_follow_up", False)
-        })
+            # Fallback image URL for testing
+            card['image_url'] = 'https://example.com/placeholder.jpg'
             
-        # Set session cookie if not already set
-        resp = jsonify(response)
-        if not request.cookies.get('session_id'):
-            resp.set_cookie(
-                'session_id',
-                session_id,
-                secure=True,
-                httponly=True,
-                samesite='Lax',
-                max_age=3600,
-                path='/'
-            )
-            
-        return resp
-            
+        return card
+        
     except Exception as e:
-        logger.error(f"Error processing answer: {str(e)}")
-        return jsonify({
-            "error": "Internal server error",
-            "details": str(e)
-        }), 500
+        logger.error(f"Error creating card: {str(e)}")
+        return None
 
 @interview_bp.route('/interview/process', methods=['POST'], strict_slashes=False)
 def process_response():
@@ -428,7 +483,7 @@ def get_timeline():
         logger.info("GET /timeline called")
         
         # Get session ID from request
-        session_id = request.cookies.get('session_id')
+        session_id = request.cookies.get('session')
         if not session_id:
             return jsonify({
                 "error": "No session found",
@@ -455,13 +510,14 @@ def get_timeline():
         # Format timeline data
         timeline_data = []
         for answer in stage.answers:
-            timeline_data.append({
-                "id": str(uuid.uuid4()),
-                "title": answer['question'],
-                "description": answer['answer'],
-                "date": answer.get('timestamp', datetime.now().isoformat()),
-                "type": "memory"
-            })
+            # Create a card for each answer
+            card = create_card_from_answer(
+                answer['answer'],
+                answer['question'],
+                answer['stage']
+            )
+            if card:
+                timeline_data.append(card)
             
         return jsonify({
             "success": True,
@@ -474,3 +530,51 @@ def get_timeline():
             "error": "Internal server error",
             "details": str(e)
         }), 500
+
+def extract_people(answer: str) -> List[str]:
+    """Extract people from answer text."""
+    people = []
+    
+    # Look for common people patterns
+    people_patterns = [
+        r'my (mother|father|mom|dad|sister|brother|sibling|parent)',
+        r'my (grandmother|grandfather|grandma|grandpa)',
+        r'my (aunt|uncle|cousin)',
+        r'my (wife|husband|spouse|partner)',
+        r'my (son|daughter|child|kid)'
+    ]
+    
+    for pattern in people_patterns:
+        match = re.search(pattern, answer.lower())
+        if match:
+            people.append(match.group(1))
+    
+    # If no patterns match, return empty list
+    return people
+
+def extract_date(answer: str) -> Optional[datetime]:
+    """Extract date from answer text."""
+    # Look for year pattern
+    year_match = re.search(r'\b(19|20)\d{2}\b', answer)
+    if year_match:
+        year = int(year_match.group(0))
+        return datetime(year, 1, 1)  # Default to January 1st of the year
+    
+    # Look for month and year pattern
+    month_year_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', answer)
+    if month_year_match:
+        month = month_year_match.group(1)
+        year = int(month_year_match.group(2))
+        month_num = datetime.strptime(month, '%B').month
+        return datetime(year, month_num, 1)  # Default to 1st of the month
+    
+    # Look for full date pattern
+    date_match = re.search(r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})', answer)
+    if date_match:
+        day = int(date_match.group(1))
+        month = int(date_match.group(2))
+        year = int(date_match.group(3))
+        return datetime(year, month, day)
+    
+    # If no patterns match, return None
+    return None

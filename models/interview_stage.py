@@ -30,6 +30,16 @@ class InterviewStage:
         stage.created_at = data.get("created_at", datetime.now().isoformat())
         return stage
 
+    def add_answer(self, answer: str) -> None:
+        """Add an answer to the stage"""
+        if self.current_question:
+            self.answers.append({
+                "question": self.current_question,
+                "answer": answer,
+                "stage": self.current_stage,
+                "timestamp": datetime.now().isoformat()
+            })
+
     def get_progress(self) -> float:
         """Calculate interview progress as a percentage"""
         # This is a simplified progress calculation
