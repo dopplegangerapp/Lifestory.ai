@@ -19,3 +19,9 @@ pytest
 pytest-cov
 pytest
 pytest-cov
+pytest
+pytest-cov
+requests
+pytest
+pytest-cov
+requests
