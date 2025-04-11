@@ -150,59 +150,72 @@ def process_interview():
         # Create event card if event information is present
         if 'event' in response:
             event_data = response['event']
-            event = core.create_event(
-                title=event_data.get('title', ''),
-                description=event_data.get('description', ''),
-                start_date=datetime.fromisoformat(event_data['start_date']) if 'start_date' in event_data else None,
-                end_date=datetime.fromisoformat(event_data['end_date']) if 'end_date' in event_data else None,
-                emotions=event_data.get('emotions', [])
-            )
-            cards.append(event)
+            try:
+                event = core.create_event(
+                    title=event_data.get('title', ''),
+                    description=event_data.get('description', ''),
+                    start_date=datetime.fromisoformat(event_data['start_date']) if 'start_date' in event_data else None,
+                    end_date=datetime.fromisoformat(event_data['end_date']) if 'end_date' in event_data else None,
+                    emotions=event_data.get('emotions', [])
+                )
+                cards.append(event)
+            except Exception as e:
+                logger.error(f"Error creating event card: {str(e)}")
         
         # Create person cards if people information is present
         if 'people' in response:
             for person_data in response['people']:
-                person = core.create_person(
-                    title=person_data.get('title', ''),
-                    description=person_data.get('description', ''),
-                    name=person_data.get('name', ''),
-                    relationship=person_data.get('relationship', '')
-                )
-                cards.append(person)
+                try:
+                    person = core.create_person(
+                        title=person_data.get('title', ''),
+                        description=person_data.get('description', ''),
+                        name=person_data.get('name', '')
+                    )
+                    cards.append(person)
+                except Exception as e:
+                    logger.error(f"Error creating person card: {str(e)}")
         
         # Create place card if location information is present
         if 'location' in response:
             place_data = response['location']
-            place = core.create_place(
-                title=place_data.get('title', ''),
-                description=place_data.get('description', ''),
-                name=place_data.get('name', ''),
-                latitude=place_data.get('latitude', 0.0),
-                longitude=place_data.get('longitude', 0.0)
-            )
-            cards.append(place)
+            try:
+                place = core.create_place(
+                    title=place_data.get('title', ''),
+                    description=place_data.get('description', ''),
+                    name=place_data.get('name', ''),
+                    latitude=place_data.get('latitude', 0.0),
+                    longitude=place_data.get('longitude', 0.0)
+                )
+                cards.append(place)
+            except Exception as e:
+                logger.error(f"Error creating place card: {str(e)}")
         
         # Create memory card if memory information is present
         if 'memory' in response:
             memory_data = response['memory']
-            memory = core.create_memory(
-                title=memory_data.get('title', ''),
-                description=memory_data.get('description', ''),
-                emotions=memory_data.get('emotions', [])
-            )
-            cards.append(memory)
+            try:
+                memory = core.create_memory(
+                    title=memory_data.get('title', ''),
+                    description=memory_data.get('description', ''),
+                    emotions=memory_data.get('emotions', [])
+                )
+                cards.append(memory)
+            except Exception as e:
+                logger.error(f"Error creating memory card: {str(e)}")
         
         # Save all created cards
+        saved_cards = []
         for card in cards:
             try:
                 core.save_card(card)
+                saved_cards.append(card)
             except Exception as e:
                 logger.error(f"Error saving card: {str(e)}")
                 continue
         
         return jsonify({
             'message': 'Cards created successfully',
-            'cards': [card.to_dict() for card in cards]
+            'cards': [card.to_dict() for card in saved_cards]
         })
         
     except Exception as e:
