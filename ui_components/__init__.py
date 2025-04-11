@@ -3,7 +3,7 @@ UI Components package for Lifestory.ai
 """
 
 from .droe_orb import create_droe_orb
-from .interview import create_interview_ui
+from .interview import render as create_interview_ui
 from .timeline import create_timeline_ui
 from .animated_ui import create_animated_ui
 
