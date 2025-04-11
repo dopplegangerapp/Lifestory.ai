@@ -1,20 +1,27 @@
 import streamlit as st
 import requests
 
+def reset_session():
+    st.session_state.started = False
+    st.session_state.answers = []
+    st.session_state.current_question = None
+    st.session_state.stage = None
+    st.session_state.progress = 0
+    st.session_state.error = None
+
 def render():
     st.title("Life Story Interview")
 
     # Initialize session state
     if "started" not in st.session_state:
-        st.session_state.started = False
-    if 'answers' not in st.session_state:
-        st.session_state.answers = []
-    if 'current_question' not in st.session_state:
-        st.session_state.current_question = None
-    if 'stage' not in st.session_state:
-        st.session_state.stage = None
-    if 'progress' not in st.session_state:
-        st.session_state.progress = 0
+        reset_session()
+
+    # Show error if exists
+    if st.session_state.get('error'):
+        st.error(st.session_state.error)
+        if st.button("Reset Interview"):
+            reset_session()
+            st.rerun()
 
     try:
         if not st.session_state.started:
@@ -49,13 +56,22 @@ def render():
 
             with col2:
                 if st.button("Continue", use_container_width=True, disabled=not answer):
-                    response = requests.post(
-                        "http://0.0.0.0:5000/interview",
-                        json={"answer": answer.strip()}
-                    )
+                    try:
+                        response = requests.post(
+                            "http://0.0.0.0:5000/interview",
+                            json={"answer": answer.strip()},
+                            timeout=5
+                        )
 
-                    if response.status_code == 200:
-                        data = response.json()
+                        if response.status_code == 200:
+                            data = response.json()
+                            st.session_state.error = None
+                        else:
+                            st.session_state.error = f"Server error: {response.status_code}"
+                            st.rerun()
+                    except requests.exceptions.RequestException as e:
+                        st.session_state.error = f"Connection error: {str(e)}"
+                        st.rerun()
 
                         # Store answer
                         st.session_state.answers.append({

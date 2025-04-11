@@ -97,7 +97,9 @@ class InterviewStage:
 
 @interview_bp.route('/', methods=['GET'])
 def get_question():
-    stage = InterviewStage() if 'interview_stage' not in session else InterviewStage.from_dict(session['interview_stage'])
+    if 'interview_stage' not in session:
+        session['interview_stage'] = InterviewStage().to_dict()
+    stage = InterviewStage.from_dict(session['interview_stage'])
 
     if stage.completed:
         return jsonify({
