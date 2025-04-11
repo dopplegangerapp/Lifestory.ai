@@ -111,17 +111,16 @@ class DROECore:
             logger.error(f"Error searching cards: {str(e)}")
             return []
     
-    def create_event(self, title: str, description: str, start_date: Optional[datetime] = None,
-                    end_date: Optional[datetime] = None, emotions: Optional[List[str]] = None) -> EventCard:
+    def create_event(self, title: str, description: str, location: Optional[str] = None,
+                    participants: Optional[List[str]] = None) -> EventCard:
         """
         Create a new event card.
         
         Args:
             title (str): Event's title
             description (str): Event's description
-            start_date (Optional[datetime]): When the event started
-            end_date (Optional[datetime]): When the event ended
-            emotions (Optional[List[str]]): Emotions associated with the event
+            location (Optional[str]): Where the event occurred
+            participants (Optional[List[str]]): People involved in the event
             
         Returns:
             EventCard: The created event card
@@ -129,15 +128,13 @@ class DROECore:
         event = EventCard(
             title=title,
             description=description,
-            start_date=start_date,
-            end_date=end_date,
-            emotions=emotions or []
+            location=location,
+            participants=participants or []
         )
         self.save_card(event)
         return event
     
-    def create_person(self, title: str, description: str, name: str,
-                     relationship: str = "") -> PersonCard:
+    def create_person(self, title: str, description: str, name: str) -> PersonCard:
         """
         Create a new person card.
         
@@ -145,16 +142,14 @@ class DROECore:
             title (str): Person's title
             description (str): Person's description
             name (str): Person's name
-            relationship (str): Relationship to the person
             
         Returns:
             PersonCard: The created person card
         """
         person = PersonCard(
-            title=title,
-            description=description,
             name=name,
-            relationship=relationship
+            title=title,
+            description=description
         )
         self.save_card(person)
         return person
@@ -184,23 +179,20 @@ class DROECore:
         self.save_card(place)
         return place
     
-    def create_memory(self, title: str, description: str,
-                     emotions: Optional[List[str]] = None) -> MemoryCard:
+    def create_memory(self, title: str, description: str) -> MemoryCard:
         """
         Create a new memory card.
         
         Args:
             title (str): Memory's title
             description (str): Memory's description
-            emotions (Optional[List[str]]): Emotions associated with the memory
             
         Returns:
             MemoryCard: The created memory card
         """
         memory = MemoryCard(
             title=title,
-            description=description,
-            emotions=emotions or []
+            description=description
         )
         self.save_card(memory)
         return memory 
