@@ -1,10 +1,11 @@
+
 import streamlit as st
 import requests
 
 def create_interview_ui():
     """Create an engaging and supportive interview UI."""
-
-    # Initialize session state for interview if not exists
+    
+    # Initialize session state
     if 'current_question' not in st.session_state:
         st.session_state.current_question = "Ready to begin your life story interview?"
     if 'stage' not in st.session_state:
@@ -29,32 +30,38 @@ def create_interview_ui():
             if st.button("Start Interview", use_container_width=True):
                 st.session_state.started = True
                 try:
-                    response = requests.get("http://0.0.0.0:5000/interview/")
+                    response = requests.get("http://0.0.0.0:5000/interview")
                     if response.status_code == 200:
                         data = response.json()
                         st.session_state.current_question = data.get("question", "What's your name?")
                         st.session_state.stage = data.get("current_stage", "welcome")
                         st.session_state.progress = float(data.get("progress", 0)) / 100
                         st.rerun()
+                    else:
+                        st.error(f"Server error: {response.status_code}")
                 except Exception as e:
-                    st.error(f"Error connecting to backend: {str(e)}")
+                    st.error(f"Connection error: {str(e)}")
         else:
             answer = st.text_area("Your answer:", key="answer_input", height=100, max_chars=1000)
             if st.button("Continue", use_container_width=True) and answer:
                 try:
                     response = requests.post(
-                        "http://0.0.0.0:5000/interview/",
+                        "http://0.0.0.0:5000/interview",
                         json={"answer": answer}
                     )
                     if response.status_code == 200:
                         data = response.json()
-                        st.session_state.current_question = data.get("question", "Thank you for sharing!")
-                        st.session_state.stage = data.get("current_stage", st.session_state.stage)
-                        st.session_state.progress = float(data.get("progress", 0)) / 100
-                        st.session_state.answers.append(answer)
-                        if data.get("completed", False):
+                        next_question = data.get("next_question")
+                        if next_question:
+                            st.session_state.current_question = next_question
+                            st.session_state.stage = data.get("current_stage", st.session_state.stage)
+                            st.session_state.progress = float(data.get("progress", 0)) / 100
+                            st.session_state.answers.append(answer)
+                            if data.get("completed", False):
+                                st.success("Interview completed!")
+                            st.rerun()
+                        else:
                             st.success("Interview completed!")
-                        st.rerun()
                     else:
                         st.error(f"Failed to submit answer: {response.status_code}")
                 except Exception as e:
