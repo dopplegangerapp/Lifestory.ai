@@ -51,17 +51,33 @@ def create_interview_ui():
                     )
                     if response.status_code == 200:
                         data = response.json()
+                        follow_up = data.get("follow_up")
                         next_question = data.get("next_question")
+                        
+                        # Store the answer
+                        st.session_state.answers.append(answer)
+                        
+                        # Update progress
+                        if "progress" in data:
+                            st.session_state.progress = float(data.get("progress", 0)) / 100
+                            
+                        # Update stage if provided
+                        if "current_stage" in data:
+                            st.session_state.stage = data["current_stage"]
+                            
+                        # Show follow-up if available
+                        if follow_up:
+                            st.info(follow_up)
+                            
+                        # Set next question or complete
                         if next_question:
                             st.session_state.current_question = next_question
-                            st.session_state.stage = data.get("current_stage", st.session_state.stage)
-                            st.session_state.progress = float(data.get("progress", 0)) / 100
-                            st.session_state.answers.append(answer)
-                            if data.get("completed", False):
-                                st.success("Interview completed!")
                             st.rerun()
-                        else:
+                        elif data.get("completed", False):
                             st.success("Interview completed!")
+                            st.session_state.current_question = "Thank you for sharing your story!"
+                        else:
+                            st.error("No next question received")
                     else:
                         st.error(f"Failed to submit answer: {response.status_code}")
                 except Exception as e:
