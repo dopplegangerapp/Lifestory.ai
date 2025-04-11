@@ -40,6 +40,13 @@
         <div id="follow-up-questions" class="follow-up-questions" style="display: none;">
             <!-- Follow-up questions will be displayed here -->
         </div>
+
+        <div id="timeline-viewer" class="timeline-viewer" style="display: none;">
+            <h3>Your Life Timeline</h3>
+            <div id="timeline-content" class="timeline-content">
+                <!-- Timeline events will be displayed here -->
+            </div>
+        </div>
     </div>
 
     <div class="interview-tips">
@@ -226,6 +233,43 @@
         position: absolute;
         left: 0;
     }
+
+    .timeline-viewer {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #1a1a1a;
+        border-radius: 8px;
+    }
+
+    .timeline-content {
+        margin-top: 1rem;
+    }
+
+    .timeline-event {
+        background: #2a2a2a;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid #448aff;
+    }
+
+    .timeline-event h3 {
+        margin: 0 0 0.5rem 0;
+        color: #448aff;
+    }
+
+    .timeline-event p {
+        margin: 0 0 0.5rem 0;
+        color: #ccc;
+    }
+
+    .timeline-event small {
+        color: #888;
+    }
+
+    .error {
+        color: #ff4444;
+    }
 </style>
 {% endblock %}
 
@@ -307,20 +351,22 @@
     }
 
     startBtn.addEventListener('click', async () => {
-        const response = await fetch('/api/interview/start', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+        const response = await fetch('/interview', {
+            method: 'GET',
+            credentials: 'include'
         });
         const data = await response.json();
         
-        questionText.textContent = data.question;
-        questionHint.textContent = "Take your time to answer thoughtfully.";
-        startBtn.style.display = 'none';
-        submitBtn.style.display = 'block';
-        skipBtn.style.display = 'block';
-        answerInput.focus();
+        if (data.success) {
+            questionText.textContent = data.question;
+            questionHint.textContent = "Take your time to answer thoughtfully.";
+            startBtn.style.display = 'none';
+            submitBtn.style.display = 'block';
+            skipBtn.style.display = 'block';
+            answerInput.focus();
+        } else {
+            alert(data.error || 'Failed to start interview');
+        }
     });
 
     submitBtn.addEventListener('click', async () => {
@@ -330,45 +376,109 @@
             return;
         }
 
-        const response = await fetch('/api/interview/answer', {
+        const response = await fetch('/interview', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ answer })
         });
         const data = await response.json();
         
-        questionText.textContent = data.question;
-        currentStage = data.stage.toLowerCase();
-        currentQuestionIndex = data.question_index;
-        storyArcs = data.story_arcs;
-        
-        answerInput.value = '';
-        currentStageSpan.textContent = INTERVIEW_STAGES[currentStage].name;
-        updateProgress();
-        updateStoryArcs();
+        if (data.success) {
+            if (data.completed) {
+                questionText.textContent = "Thank you for completing the interview!";
+                questionHint.textContent = "Your answers have been saved.";
+                submitBtn.style.display = 'none';
+                skipBtn.style.display = 'none';
+                answerInput.style.display = 'none';
+                loadTimeline();
+            } else {
+                questionText.textContent = data.next_question;
+                questionHint.textContent = "Take your time to answer thoughtfully.";
+                answerInput.value = '';
+                answerInput.focus();
+                
+                // Update progress
+                const progress = data.progress || 0;
+                progressFill.style.width = `${progress}%`;
+                
+                // Update stage
+                currentStageSpan.textContent = data.current_stage.charAt(0).toUpperCase() + data.current_stage.slice(1);
+                
+                // Load timeline if we have events
+                if (data.timeline && data.timeline.length > 0) {
+                    loadTimeline();
+                }
+            }
+        } else {
+            alert(data.error || 'An error occurred while processing your answer.');
+        }
     });
 
     skipBtn.addEventListener('click', async () => {
-        const response = await fetch('/api/interview/answer', {
+        const response = await fetch('/interview', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ answer: '[SKIPPED]' })
         });
         const data = await response.json();
         
-        questionText.textContent = data.question;
-        currentStage = data.stage.toLowerCase();
-        currentQuestionIndex = data.question_index;
-        storyArcs = data.story_arcs;
-        
-        answerInput.value = '';
-        currentStageSpan.textContent = INTERVIEW_STAGES[currentStage].name;
-        updateProgress();
-        updateStoryArcs();
+        if (data.success) {
+            questionText.textContent = data.next_question;
+            questionHint.textContent = "Take your time to answer thoughtfully.";
+            answerInput.value = '';
+            answerInput.focus();
+            
+            // Update progress
+            const progress = data.progress || 0;
+            progressFill.style.width = `${progress}%`;
+            
+            // Update stage
+            currentStageSpan.textContent = data.current_stage.charAt(0).toUpperCase() + data.current_stage.slice(1);
+        } else {
+            alert(data.error || 'Failed to skip question');
+        }
     });
+
+    // Timeline viewer
+    const timelineViewer = document.getElementById('timeline-viewer');
+    const timelineContent = document.getElementById('timeline-content');
+    
+    async function loadTimeline() {
+        try {
+            const response = await fetch('/api/interview/timeline', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                timelineContent.innerHTML = '';
+                data.timeline.forEach(event => {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = 'timeline-event';
+                    eventElement.innerHTML = `
+                        <h3>${event.title}</h3>
+                        <p>${event.description}</p>
+                        <small>${new Date(event.date).toLocaleDateString()}</small>
+                    `;
+                    timelineContent.appendChild(eventElement);
+                });
+                timelineViewer.style.display = 'block';
+            } else {
+                timelineContent.innerHTML = `<p class="error">${data.error}: ${data.details}</p>`;
+            }
+        } catch (error) {
+            timelineContent.innerHTML = `<p class="error">Error loading timeline: ${error.message}</p>`;
+        }
+    }
+    
+    // Load timeline when viewer is shown
+    timelineViewer.addEventListener('show', loadTimeline);
 </script>
 {% endblock %} 

@@ -125,7 +125,7 @@ def render():
                                 st.session_state.current_question = data["question"]
                                 st.session_state.stage = data.get("current_stage", "welcome")
                                 st.session_state.name = name
-                                st.rerun()
+                                st.experimental_rerun()
                             else:
                                 st.error("Invalid response from server")
                         else:
@@ -155,12 +155,12 @@ def render():
                                 data = response.json()
                                 if data.get("completed", False):
                                     st.session_state.started = False
-                                    st.rerun()
+                                    st.experimental_rerun()
                                 else:
                                     st.session_state.current_question = data.get("next_question")
                                     st.session_state.stage = data.get("current_stage")
                                     st.session_state.progress = float(data.get("progress", 0))
-                                    st.rerun()
+                                    st.experimental_rerun()
                             else:
                                 st.error(f"Server error: {response.status_code}")
                         except Exception as e:
@@ -174,4 +174,4 @@ def render():
         st.error(f"An error occurred: {str(e)}")
         if st.button("Reset Interview"):
             reset_session()
-            st.rerun()
+            st.experimental_rerun()

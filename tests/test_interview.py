@@ -15,6 +15,7 @@ from cards.person_card import PersonCard
 from cards.place_card import PlaceCard
 from cards.event_card import EventCard
 from cards.memory_card import MemoryCard
+from db.session import get_db_session
 from .test_base import TestBase
 
 @pytest.fixture
@@ -179,35 +180,27 @@ def test_complete_interview(client):
     assert data["completed"] == True
 
 # Test frontend integration
-def test_frontend_integration():
-    try:
-        # Create a session
-        session = requests.Session()
+def test_frontend_integration(client):
+    # Test API endpoint availability
+    response = client.get('/interview')
+    assert response.status_code == 200
 
-        # Test API endpoint availability
-        response = session.get('http://localhost:5001/interview')
-        assert response.status_code == 200
+    # Test API response format
+    data = json.loads(response.data)
+    assert "question" in data
+    assert "current_stage" in data
+    assert "progress" in data
 
-        # Test API response format
-        data = response.json()
-        assert "question" in data
-        assert "current_stage" in data
-        assert "progress" in data
-
-        # Test answer submission
-        headers = {'Content-Type': 'application/json'}
-        response = session.post(
-            'http://localhost:5001/interview',
-            json={"answer": "Test answer"},
-            headers=headers
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "success" in data
-        assert data["success"] == True
-
-    except requests.exceptions.ConnectionError:
-        pytest.skip("Flask server is not running on port 5001. Start the server with 'python app.py' before running this test.")
+    # Test answer submission
+    response = client.post(
+        '/interview',
+        json={"answer": "Test answer"},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert "success" in data
+    assert data["success"] == True
 
 # Test malformed JSON data
 def test_malformed_json(client):
@@ -413,6 +406,91 @@ class TestInterview(TestBase):
             assert response.status_code == 200
             data = json.loads(response.data)
             assert data["success"] == True
+
+    def test_create_timeline(self):
+        """Test creating a timeline with one of each card type."""
+        with self.app.test_client() as client:
+            # First create a memory card
+            response = client.post('/interview/process',
+                                json={
+                                    "response": {
+                                        "memory": {
+                                            "title": "First day at school",
+                                            "description": "I remember being excited and nervous",
+                                            "date": "2000-09-01T08:00:00"
+                                        }
+                                    }
+                                },
+                                headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200
+            memory_data = json.loads(response.data)
+            assert memory_data["success"] == True
+            memory_id = memory_data["card_id"]
+            
+            # Then create a person card
+            response = client.post('/interview/process',
+                                json={
+                                    "response": {
+                                        "people": [{
+                                            "name": "Mrs. Smith",
+                                            "title": "My First Teacher",
+                                            "description": "A kind and patient teacher who helped me adjust",
+                                            "relationships": ["teacher"]
+                                        }]
+                                    }
+                                },
+                                headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200
+            person_data = json.loads(response.data)
+            assert person_data["success"] == True
+            person_id = person_data["card_id"]
+            
+            # Finally create a place card
+            response = client.post('/interview/process',
+                                json={
+                                    "response": {
+                                        "location": {
+                                            "name": "Elementary School",
+                                            "title": "My First School",
+                                            "description": "A red brick building with a big playground",
+                                            "latitude": 40.7128,
+                                            "longitude": -74.0060
+                                        }
+                                    }
+                                },
+                                headers={'Content-Type': 'application/json'})
+            assert response.status_code == 200
+            place_data = json.loads(response.data)
+            assert place_data["success"] == True
+            place_id = place_data["card_id"]
+            
+            # Verify all cards were created
+            assert memory_id is not None
+            assert person_id is not None
+            assert place_id is not None
+            
+            # TODO: Once timeline API is implemented, verify cards appear in timeline
+            # For now, we can verify they exist in the database
+            with get_db_session() as conn:
+                cursor = conn.cursor()
+                
+                # Check memory card
+                cursor.execute("SELECT * FROM cards JOIN memories ON cards.id = memories.id WHERE cards.id = ?", (memory_id,))
+                memory = cursor.fetchone()
+                assert memory is not None
+                assert memory['title'] == "First day at school"
+                
+                # Check person card
+                cursor.execute("SELECT * FROM cards JOIN people ON cards.id = people.id WHERE cards.id = ?", (person_id,))
+                person = cursor.fetchone()
+                assert person is not None
+                assert person['title'] == "My First Teacher"
+                
+                # Check place card
+                cursor.execute("SELECT * FROM cards JOIN places ON cards.id = places.id WHERE cards.id = ?", (place_id,))
+                place = cursor.fetchone()
+                assert place is not None
+                assert place['title'] == "My First School"
 
 if __name__ == '__main__':
     pytest.main([__file__])

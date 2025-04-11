@@ -1,17 +1,23 @@
-from flask import Blueprint, jsonify, request, session, render_template
+from flask import Blueprint, jsonify, request, session
+from flask_cors import cross_origin
 from datetime import datetime
 from typing import Dict, List, Optional
 from cards.event_card import EventCard
 from cards.memory_card import MemoryCard
 from cards.person_card import PersonCard
 from cards.place_card import PlaceCard
-from db.utils import save_card
+from cards.base_card import BaseCard
+from db.session import save_card, DatabaseError
 from db import SessionLocal
+from db.session_db import session_db
 import re
 import logging
 import uuid
 from core import DROECore
 from utils.logger import get_logger
+from services.openai_service import openai_service
+from models.interview_stage import InterviewStage
+from services.event_card_service import create_event_card
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -20,244 +26,451 @@ logger = logging.getLogger(__name__)
 interview_bp = Blueprint('interview', __name__)
 core = DROECore()
 
-INTERVIEW_QUESTIONS = {
-    "welcome": [
-        {"question": "Are you ready to begin your life story interview?", "type": "text"}
-    ],
-    "foundations": [
-        {"question": "What is your full name and when were you born?", "type": "text"},
-        {"question": "Where were you born and where did you grow up?", "type": "text"},
-        {"question": "Tell me about your parents and siblings.", "type": "text"},
-        {"question": "What are your earliest memories?", "type": "text"}
-    ],
-    "childhood": [
-        {"question": "What was your childhood home like?", "type": "text"},
-        {"question": "What were your favorite activities as a child?", "type": "text"},
-        {"question": "Who were your closest friends growing up?", "type": "text"}
-    ],
-    "education": [
-        {"question": "What schools did you attend and what were your experiences there?", "type": "text"},
-        {"question": "What were your favorite subjects or activities in school?", "type": "text"}
-    ]
-}
-
-class InterviewStage:
-    def __init__(self):
-        self.current_stage = "welcome"
-        self.current_question_index = 0
-        self.answers = []
-        self.completed = False
-        self.created_at = datetime.now()
-
-    def to_dict(self) -> Dict:
-        return {
-            "current_stage": self.current_stage,
-            "current_question_index": self.current_question_index,
-            "answers": self.answers,
-            "completed": self.completed,
-            "created_at": self.created_at.isoformat()
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict) -> 'InterviewStage':
-        if not isinstance(data, dict):
-            raise ValueError("Invalid data format for InterviewStage")
-
-        instance = cls()
-        instance.current_stage = data.get("current_stage", "welcome")
-        instance.current_question_index = data.get("current_question_index", 0)
-        instance.answers = data.get("answers", [])
-        instance.completed = data.get("completed", False)
-        instance.created_at = datetime.fromisoformat(data.get("created_at", datetime.now().isoformat()))
-        return instance
-
-    def advance(self) -> bool:
-        """Advance to next question or stage, returns True if interview is complete"""
-        if self.completed:
-            return True
-
-        current_stage_questions = INTERVIEW_QUESTIONS.get(self.current_stage, [])
-
-        if self.current_question_index < len(current_stage_questions) - 1:
-            self.current_question_index += 1
-            return False
-
-        stages = list(INTERVIEW_QUESTIONS.keys())
-        try:
-            current_stage_index = stages.index(self.current_stage)
-        except ValueError:
-            self.completed = True
-            return True
-
-        if current_stage_index < len(stages) - 1:
-            self.current_stage = stages[current_stage_index + 1]
-            self.current_question_index = 0
-            return False
-
-        self.completed = True
-        return True
-
-    def get_current_question(self) -> Optional[Dict]:
-        if self.completed:
-            return None
-
-        current_stage_questions = INTERVIEW_QUESTIONS.get(self.current_stage, [])
-        if self.current_question_index < len(current_stage_questions):
-            return current_stage_questions[self.current_question_index]
-        return None
-
-    def get_progress(self) -> float:
-        if self.completed:
-            return 100.0
-
-        total_questions = sum(len(questions) for questions in INTERVIEW_QUESTIONS.values())
-        if total_questions == 0:
-            return 0.0
-
-        completed_questions = 0
-        stages = list(INTERVIEW_QUESTIONS.keys())
-
-        try:
-            current_stage_index = stages.index(self.current_stage)
-        except ValueError:
-            return 0.0
-
-        # Add completed stages
-        for stage in stages[:current_stage_index]:
-            completed_questions += len(INTERVIEW_QUESTIONS[stage])
-
-        # Add current stage progress
-        completed_questions += self.current_question_index
-
-        return (completed_questions / total_questions) * 100
-
 @interview_bp.route('/interview', methods=['GET'], strict_slashes=False)
+@cross_origin(supports_credentials=True)
 def get_interview():
-    """Get the interview page."""
+    """Get the current interview state."""
     try:
-        if 'interview_stage' not in session:
-            session['interview_stage'] = InterviewStage().to_dict()
-
-        stage = InterviewStage.from_dict(session['interview_stage'])
-
-        # Reset to welcome stage if current stage is invalid
-        if stage.current_stage not in INTERVIEW_QUESTIONS:
+        logger.info("GET /interview called")
+        
+        # Get session ID from request
+        session_id = request.cookies.get('session_id')
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            logger.info(f"Created new session ID: {session_id}")
+        
+        # Get interview stage from database
+        stage = None
+        session_data = session_db.get_session(session_id)
+        if session_data and 'interview_stage' in session_data:
+            try:
+                logger.info("Loading existing interview stage")
+                stage = InterviewStage.from_dict(session_data['interview_stage'])
+                logger.info(f"Loaded stage: {stage.to_dict()}")
+            except (ValueError, KeyError, TypeError) as e:
+                logger.error(f"Invalid session data: {str(e)}")
+                stage = None
+        
+        # If no valid stage in session, create new one
+        if not stage:
+            logger.info("Creating new interview stage")
             stage = InterviewStage()
-            session['interview_stage'] = stage.to_dict()
-
-        if stage.completed:
-            response = {
-                "question": "Thank you for sharing your story!",
-                "completed": True,
-                "current_stage": stage.current_stage,
-                "progress": 100
-            }
-            return jsonify(response)
-
-        question_data = stage.get_current_question()
-        if not question_data:
-            return jsonify({"error": "No question available"}), 400
-
-        session['interview_stage'] = stage.to_dict()
-        response = {
-            "question": question_data["question"],
-            "current_stage": stage.current_stage,
-            "progress": stage.get_progress()
-        }
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@interview_bp.route('/interview', methods=['POST'], strict_slashes=False)
-def process_interview():
-    """Process interview responses and create cards."""
-    try:
-        if not request.is_json:
-            return jsonify({"error": "Request must be JSON"}), 400
+            session_data = {'interview_stage': stage.to_dict()}
+            session_db.save_session(session_id, session_data)
+            logger.info(f"Saved new stage: {stage.to_dict()}")
         
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
-        if 'answer' not in data:
-            return jsonify({"error": "No answer provided"}), 400
-        
-        if 'interview_stage' not in session:
-            return jsonify({"error": "No active interview session"}), 400
-        
-        stage = InterviewStage.from_dict(session['interview_stage'])
-        if stage.completed:
-            return jsonify({"error": "Interview already completed"}), 400
-        
-        # Store the answer
-        stage.answers.append({
-            "question": stage.get_current_question()["question"],
-            "answer": data["answer"],
-            "timestamp": datetime.now().isoformat()
+        # Get current question from OpenAI
+        next_question = openai_service.get_next_question({
+            "answers": stage.answers,
+            "current_stage": stage.current_stage
         })
         
-        # Advance to next question
-        has_next = stage.advance()
+        # Update stage with new question
+        stage.current_question = next_question["question"]
+        stage.current_stage = next_question["stage"]
         
-        # Update session
-        session['interview_stage'] = stage.to_dict()
-        
+        # Save updated stage
+        session_data = {'interview_stage': stage.to_dict()}
+        session_db.save_session(session_id, session_data)
+            
         response = {
             "success": True,
-            "has_next": has_next
+            "question": next_question["question"],
+            "current_stage": next_question["stage"],
+            "progress": stage.get_progress(),
+            "completed": stage.completed,
+            "context": next_question.get("context", "")
+        }
+        logger.info(f"Returning interview state: {response}")
+        
+        # Set session cookie if not already set
+        resp = jsonify(response)
+        if not request.cookies.get('session_id'):
+            resp.set_cookie(
+                'session_id',
+                session_id,
+                secure=True,
+                httponly=True,
+                samesite='Lax',
+                max_age=3600,
+                path='/'
+            )
+        return resp
+        
+    except Exception as e:
+        logger.error(f"Error getting interview: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
+
+def create_event_card(answer_data: Dict) -> Dict:
+    """Create an event card from the answer data."""
+    try:
+        # Extract relevant information from the answer
+        description = answer_data.get('answer', '')
+        question = answer_data.get('question', '')
+        
+        # Determine card type based on question content
+        card_type = 'memory'  # Default type
+        
+        if 'parents' in question.lower() or 'siblings' in question.lower():
+            card_type = 'person'
+        elif 'place' in question.lower() or 'where' in question.lower():
+            card_type = 'place'
+            
+        # Create the card
+        card = {
+            'title': question,
+            'description': description,
+            'type': card_type,
+            'date': datetime.now().isoformat(),
+            'image_url': None  # This would be generated by an image service
         }
         
-        if has_next:
-            response["next_question"] = stage.get_current_question()
-        
-        return jsonify(response)
-    
+        return card
     except Exception as e:
-        logger.error(f"Error processing interview: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error creating event card: {str(e)}")
+        return None
+
+@interview_bp.route('/interview', methods=['POST'], strict_slashes=False)
+@cross_origin(supports_credentials=True)
+def submit_answer():
+    """Submit an answer to the current interview question."""
+    try:
+        logger.info("POST /interview called")
+        
+        # Get session ID from request
+        session_id = request.cookies.get('session_id')
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            logger.info(f"Created new session ID: {session_id}")
+        
+        # Check if request has JSON content type
+        if not request.is_json:
+            return jsonify({
+                "error": "Request must have application/json content type"
+            }), 400
+        
+        # Try to parse JSON data
+        try:
+            data = request.get_json()
+            logger.info(f"Received answer data: {data}")
+        except Exception as e:
+            return jsonify({
+                "error": "Invalid JSON format",
+                "details": str(e)
+            }), 400
+        
+        # Validate required fields
+        if not data:
+            return jsonify({
+                "error": "Empty request body"
+            }), 400
+            
+        if 'answer' not in data:
+            return jsonify({
+                "error": "Missing required field: answer"
+            }), 400
+            
+        # Validate answer
+        answer = data['answer']
+        if not isinstance(answer, str):
+            return jsonify({
+                "error": "Answer must be a string"
+            }), 400
+            
+        if not answer.strip():
+            return jsonify({
+                "success": False,
+                "error": "Answer cannot be empty"
+            }), 400
+            
+        # Get interview stage from database
+        stage = None
+        session_data = session_db.get_session(session_id)
+        if session_data and 'interview_stage' in session_data:
+            try:
+                logger.info("Loading existing interview stage")
+                stage = InterviewStage.from_dict(session_data['interview_stage'])
+                logger.info(f"Loaded stage: {stage.to_dict()}")
+            except (ValueError, KeyError, TypeError) as e:
+                logger.error(f"Invalid session data: {str(e)}")
+                stage = None
+        
+        # If no valid stage in session, create new one
+        if not stage:
+            logger.info("Creating new interview stage")
+            stage = InterviewStage()
+        
+        # Check if interview is completed
+        if stage.completed:
+            return jsonify({
+                "error": "Interview already completed"
+            }), 400
+            
+        # Initialize response
+        response = {
+            "success": True,
+            "completed": False
+        }
+            
+        # Process answer with OpenAI
+        openai_result = openai_service.process_interview_answer(
+            stage.current_question,
+            answer.strip(),
+            {"answers": stage.answers}
+        )
+        
+        # Store the answer with OpenAI analysis
+        answer_data = {
+            "question": stage.current_question,
+            "answer": answer.strip(),
+            "timestamp": datetime.now().isoformat(),
+            "openai_analysis": openai_result
+        }
+        stage.answers.append(answer_data)
+        
+        # Create event card from answer
+        card = create_event_card({
+            "question": stage.current_question,
+            "answer": answer.strip()
+        })
+        
+        # If OpenAI suggests a follow-up, use it
+        if openai_result.get("needs_follow_up") and openai_result.get("suggested_follow_up"):
+            next_question = {
+                "question": openai_result["suggested_follow_up"],
+                "stage": stage.current_stage,
+                "context": "Follow-up question based on previous answer"
+            }
+        else:
+            # Generate next question from OpenAI
+            next_question = openai_service.get_next_question({
+                "answers": stage.answers,
+                "current_stage": stage.current_stage
+            })
+        
+        # Update stage with new question
+        stage.current_question = next_question["question"]
+        stage.current_stage = next_question["stage"]
+        
+        # Save updated stage
+        session_data = {'interview_stage': stage.to_dict()}
+        session_db.save_session(session_id, session_data)
+        
+        response.update({
+            "next_question": next_question["question"],
+            "current_stage": next_question["stage"],
+            "progress": stage.get_progress(),
+            "context": next_question.get("context", ""),
+            "is_follow_up": openai_result.get("needs_follow_up", False)
+        })
+            
+        # Set session cookie if not already set
+        resp = jsonify(response)
+        if not request.cookies.get('session_id'):
+            resp.set_cookie(
+                'session_id',
+                session_id,
+                secure=True,
+                httponly=True,
+                samesite='Lax',
+                max_age=3600,
+                path='/'
+            )
+            
+        return resp
+            
+    except Exception as e:
+        logger.error(f"Error processing answer: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
 
 @interview_bp.route('/interview/process', methods=['POST'], strict_slashes=False)
 def process_response():
-    """Process a response and create appropriate cards."""
+    """Process interview responses and create cards."""
     try:
+        # Check if request has JSON content type
         if not request.is_json:
-            return jsonify({"error": "Request must be JSON"}), 400
+            return jsonify({
+                "error": "Request must have application/json content type"
+            }), 400
         
-        data = request.get_json()
-        if not data or 'response' not in data:
-            return jsonify({"error": "Invalid request data"}), 400
+        # Try to parse JSON data
+        try:
+            data = request.get_json()
+        except Exception as e:
+            return jsonify({
+                "error": "Invalid JSON format",
+                "details": str(e)
+            }), 400
         
-        response_data = data['response']
-        core = DROECore()
+        # Validate required fields
+        if not data:
+            return jsonify({
+                "error": "Empty request body"
+            }), 400
+            
+        if 'response' not in data:
+            return jsonify({
+                "error": "Missing required field: response"
+            }), 400
+            
+        response = data['response']
+        
+        # Validate response type
+        valid_types = {'memory', 'people', 'location'}
+        response_type = next((t for t in valid_types if t in response), None)
+        
+        if not response_type:
+            return jsonify({
+                "error": "Unsupported response type",
+                "valid_types": list(valid_types)
+            }), 400
         
         # Process different types of responses
-        if 'people' in response_data:
-            for person in response_data['people']:
-                core.create_person(
-                    name=person['name'],
-                    title=person['title'],
-                    description=person['description']
+        try:
+            if response_type == 'memory':
+                memory = response['memory']
+                if not memory.get('title') or not memory.get('description'):
+                    return jsonify({
+                        "error": "Memory requires title and description"
+                    }), 400
+                card = MemoryCard(
+                    title=memory['title'],
+                    description=memory['description'],
+                    created_at=datetime.now()
                 )
+            elif response_type == 'people':
+                person = response['people'][0]  # Assuming single person for now
+                if not person.get('title') or not person.get('description'):
+                    return jsonify({
+                        "error": "Person requires title and description"
+                    }), 400
+                card = PersonCard(
+                    title=person['title'],
+                    description=person['description'],
+                    created_at=datetime.now()
+                )
+            else:  # location
+                location = response['location']
+                if not location.get('title') or not location.get('description'):
+                    return jsonify({
+                        "error": "Location requires title and description"
+                    }), 400
+                card = PlaceCard(
+                    title=location['title'],
+                    description=location['description'],
+                    latitude=location.get('latitude', 0),
+                    longitude=location.get('longitude', 0),
+                    created_at=datetime.now()
+                )
+        except Exception as e:
+            return jsonify({
+                "error": "Card initialization error",
+                "details": str(e)
+            }), 400
         
-        if 'location' in response_data:
-            loc = response_data['location']
-            core.create_place(
-                name=loc['name'],
-                title=loc['title'],
-                description=loc['description'],
-                latitude=loc.get('latitude'),
-                longitude=loc.get('longitude')
-            )
-        
-        if 'memory' in response_data:
-            mem = response_data['memory']
-            core.create_memory(
-                title=mem['title'],
-                description=mem['description']
-            )
-        
-        return jsonify({"success": True})
-    
+        # Save the card
+        try:
+            card_id = save_card(card)
+            return jsonify({
+                "success": True,
+                "message": "Card saved successfully",
+                "card_id": card_id
+            })
+        except DatabaseError as e:
+            logger.error(f"Database error saving card: {str(e)}")
+            return jsonify({
+                "error": "Database error",
+                "details": str(e)
+            }), 500
+            
     except Exception as e:
-        logger.error(f"Error processing interview: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error processing response: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
+
+def generate_ai_question(answers: List[Dict]) -> str:
+    """Generate a context-aware question based on previous answers."""
+    try:
+        # Extract key information from answers
+        context = []
+        for answer in answers:
+            context.append(f"Q: {answer['question']}\nA: {answer['answer']}")
+        
+        # Generate a follow-up question based on the context
+        # This is a simplified version - in reality, you'd use an AI model
+        if len(answers) > 0:
+            last_answer = answers[-1]
+            if 'parents' in last_answer['question'].lower():
+                return "How did your relationship with your parents affect your childhood?"
+            elif 'siblings' in last_answer['question'].lower():
+                return "What are some specific memories you have with your siblings?"
+            elif 'place' in last_answer['question'].lower():
+                return "What was your favorite thing about growing up there?"
+        
+        return "Can you tell me more about that?"
+    except Exception as e:
+        logger.error(f"Error generating AI question: {str(e)}")
+        return "Can you tell me more about that?"
+
+@interview_bp.route('/timeline', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def get_timeline():
+    """Get timeline data for the current session."""
+    try:
+        logger.info("GET /timeline called")
+        
+        # Get session ID from request
+        session_id = request.cookies.get('session_id')
+        if not session_id:
+            return jsonify({
+                "error": "No session found",
+                "details": "Please start an interview first"
+            }), 400
+        
+        # Get session data
+        session_data = session_db.get_session(session_id)
+        if not session_data:
+            return jsonify({
+                "error": "Invalid session",
+                "details": "Session not found"
+            }), 400
+            
+        # Get interview stage
+        if 'interview_stage' not in session_data:
+            return jsonify({
+                "error": "No interview data",
+                "details": "Please complete the interview first"
+            }), 400
+            
+        stage = InterviewStage.from_dict(session_data['interview_stage'])
+        
+        # Format timeline data
+        timeline_data = []
+        for answer in stage.answers:
+            timeline_data.append({
+                "id": str(uuid.uuid4()),
+                "title": answer['question'],
+                "description": answer['answer'],
+                "date": answer.get('timestamp', datetime.now().isoformat()),
+                "type": "memory"
+            })
+            
+        return jsonify({
+            "success": True,
+            "timeline": timeline_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting timeline: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500

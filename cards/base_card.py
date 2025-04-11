@@ -20,12 +20,27 @@ class BaseCard:
     
     def __post_init__(self):
         """Initialize any fields that need post-initialization setup."""
+        # Validate required fields
+        if not self.title or not self.title.strip():
+            raise ValueError("Title is required")
+        if not self.description or not self.description.strip():
+            raise ValueError("Description is required")
+            
+        # Clean up fields
+        self.title = self.title.strip()
+        self.description = self.description.strip()
+        
+        # Set default values
         if not self.id:
             self.id = str(uuid.uuid4())
         if not self.image_path:
             self.generate_default_image()
         if self.created_at is None:
             self.created_at = datetime.now()
+        if self.metadata is None:
+            self.metadata = {}
+        if self.media is None:
+            self.media = []
     
     def generate_default_image(self):
         """Generate a default image for the card using DALL-E"""
@@ -41,11 +56,17 @@ class BaseCard:
     
     def add_media(self, media: Media) -> None:
         """Add media to the card."""
-        self.media.append(media)
+        if not isinstance(media, Media):
+            raise TypeError("media must be an instance of Media")
+        if media not in self.media:
+            self.media.append(media)
+            self.updated_at = datetime.now()
     
     def remove_media(self, media: Media) -> None:
         """Remove media from the card."""
-        self.media.remove(media)
+        if media in self.media:
+            self.media.remove(media)
+            self.updated_at = datetime.now()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the card to a dictionary."""
@@ -66,6 +87,12 @@ class BaseCard:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'BaseCard':
         """Create a card from a dictionary."""
+        # Validate required fields
+        if not data.get('title'):
+            raise ValueError("Title is required")
+        if not data.get('description'):
+            raise ValueError("Description is required")
+            
         media_list = [Media.from_dict(m) for m in data.get('media', [])]
         created_at = datetime.fromisoformat(data['created_at']) if 'created_at' in data else datetime.now()
         updated_at = datetime.fromisoformat(data['updated_at']) if 'updated_at' in data else None
@@ -85,5 +112,7 @@ class BaseCard:
         """Update card properties."""
         for key, value in kwargs.items():
             if hasattr(self, key):
-                setattr(self, key, value)
+                if key in ['title', 'description'] and not value:
+                    raise ValueError(f"{key.capitalize()} cannot be empty")
+                setattr(self, key, value.strip() if isinstance(value, str) else value)
         self.updated_at = datetime.now()

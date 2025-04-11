@@ -30,55 +30,73 @@ class PlaceCard(BaseCard):
     events: List['EventCard'] = field(default_factory=list)
     memories: List['MemoryCard'] = field(default_factory=list)
     
-    def __init__(self,
-                 title: str,
-                 description: str,
-                 location: Optional[str] = None,
-                 coordinates: Optional[Tuple[float, float]] = None,
-                 created_at: Optional[datetime] = None,
-                 updated_at: Optional[datetime] = None,
-                 id: Optional[str] = None,
-                 created_by: Optional[str] = None,
-                 media_ids: Optional[List[str]] = None):
-        """
-        Initialize a place card.
+    def __post_init__(self):
+        """Initialize place-specific fields after base initialization."""
+        super().__post_init__()
         
-        Args:
-            title (str): Place's title
-            description (str): Place's description
-            location (str, optional): Physical location of the place
-            coordinates (Tuple[float, float], optional): Latitude and longitude
-            created_at (datetime, optional): When the card was created
-            updated_at (datetime, optional): When the card was last updated
-            id (str, optional): ID of the card
-            created_by (str, optional): Who created the card
-            media_ids (List[str], optional): IDs of associated media
-        """
-        super().__init__(title=title, description=description, id=id)
-        self.location = location or ""
-        self.coordinates = coordinates
-        self.created_by = created_by
-        self.media_ids = media_ids or []
-        self.created_at = created_at or datetime.now()
-        self.updated_at = updated_at or datetime.now()
-        self.name = self.title  # Set name from title
+        # Set name from title
+        self.name = self.title
+        
+        # Initialize lists if None
+        if self.media_ids is None:
+            self.media_ids = []
+        if self.events is None:
+            self.events = []
+        if self.memories is None:
+            self.memories = []
+            
+        # Set coordinates if provided
+        if self.coordinates:
+            self.latitude, self.longitude = self.coordinates
+            
+        # Validate coordinates
+        if not -90 <= self.latitude <= 90:
+            raise ValueError("Latitude must be between -90 and 90 degrees")
+        if not -180 <= self.longitude <= 180:
+            raise ValueError("Longitude must be between -180 and 180 degrees")
     
     def set_coordinates(self, latitude: float, longitude: float) -> None:
         """Set the coordinates of the place."""
-        self.latitude = latitude
-        self.longitude = longitude
+        if not isinstance(latitude, (int, float)):
+            raise TypeError("Latitude must be a number")
+        if not isinstance(longitude, (int, float)):
+            raise TypeError("Longitude must be a number")
+        if not -90 <= latitude <= 90:
+            raise ValueError("Latitude must be between -90 and 90 degrees")
+        if not -180 <= longitude <= 180:
+            raise ValueError("Longitude must be between -180 and 180 degrees")
+            
+        self.latitude = float(latitude)
+        self.longitude = float(longitude)
+        self.coordinates = (self.latitude, self.longitude)
         self.updated_at = datetime.now()
     
     def add_event(self, event: 'EventCard') -> None:
         """Add an event that occurred at this place."""
+        if not isinstance(event, 'EventCard'):
+            raise TypeError("event must be an instance of EventCard")
         if event not in self.events:
             self.events.append(event)
             self.updated_at = datetime.now()
     
+    def remove_event(self, event: 'EventCard') -> None:
+        """Remove an event from this place."""
+        if event in self.events:
+            self.events.remove(event)
+            self.updated_at = datetime.now()
+    
     def add_memory(self, memory: 'MemoryCard') -> None:
         """Add a memory associated with this place."""
+        if not isinstance(memory, 'MemoryCard'):
+            raise TypeError("memory must be an instance of MemoryCard")
         if memory not in self.memories:
             self.memories.append(memory)
+            self.updated_at = datetime.now()
+    
+    def remove_memory(self, memory: 'MemoryCard') -> None:
+        """Remove a memory from this place."""
+        if memory in self.memories:
+            self.memories.remove(memory)
             self.updated_at = datetime.now()
     
     def to_dict(self) -> Dict[str, Any]:
@@ -86,8 +104,12 @@ class PlaceCard(BaseCard):
         data = super().to_dict()
         data.update({
             'name': self.name,
+            'location': self.location,
+            'coordinates': self.coordinates,
             'latitude': self.latitude,
             'longitude': self.longitude,
+            'created_by': self.created_by,
+            'media_ids': self.media_ids,
             'events': [event.to_dict() for event in self.events],
             'memories': [memory.to_dict() for memory in self.memories]
         })
@@ -96,26 +118,30 @@ class PlaceCard(BaseCard):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'PlaceCard':
         """Create a place from a dictionary."""
-        from .event_card import EventCard
-        from .memory_card import MemoryCard
+        # Create place card with base fields
+        place = super().from_dict(data)
         
-        # Create place card
-        place = cls(
-            title=data['title'],
-            description=data['description'],
-            id=data.get('id'),
-            latitude=data.get('latitude', 0.0),
-            longitude=data.get('longitude', 0.0)
-        )
+        # Set place-specific fields
+        place.name = data.get('name', data['title'])
+        place.location = data.get('location', '')
+        place.created_by = data.get('created_by')
+        place.media_ids = data.get('media_ids', [])
         
-        # Set base card attributes
-        place.created_at = datetime.fromisoformat(data['created_at']) if 'created_at' in data else datetime.now()
-        place.updated_at = datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else None
-        place.metadata = data.get('metadata', {})
-        place.image_path = data.get('image_path', '')
+        # Set coordinates
+        if data.get('coordinates'):
+            place.coordinates = tuple(data['coordinates'])
+            place.latitude, place.longitude = place.coordinates
+        else:
+            place.latitude = data.get('latitude', 0.0)
+            place.longitude = data.get('longitude', 0.0)
+            place.coordinates = (place.latitude, place.longitude)
         
-        # Set place-specific attributes
-        place.events = [EventCard.from_dict(e) for e in data.get('events', [])]
-        place.memories = [MemoryCard.from_dict(m) for m in data.get('memories', [])]
+        # Set associated objects
+        if data.get('events'):
+            from .event_card import EventCard
+            place.events = [EventCard.from_dict(e) for e in data['events']]
+        if data.get('memories'):
+            from .memory_card import MemoryCard
+            place.memories = [MemoryCard.from_dict(m) for m in data['memories']]
         
         return place 
