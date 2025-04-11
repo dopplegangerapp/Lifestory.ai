@@ -68,7 +68,15 @@ args = "python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "python api.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -89,3 +97,7 @@ externalPort = 80
 [[ports]]
 localPort = 8502
 externalPort = 3000
+
+[[ports]]
+localPort = 8503
+externalPort = 3002
