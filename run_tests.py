@@ -8,19 +8,20 @@ from tests.test_interview import TestInterview
 def run_tests():
     # Create test suite
     suite = unittest.TestSuite()
-    
-    # Add test cases
-    suite.addTest(unittest.makeSuite(TestBase))
-    suite.addTest(unittest.makeSuite(TestCards))
-    suite.addTest(unittest.makeSuite(TestMedia))
-    suite.addTest(unittest.makeSuite(TestInterview))
-    
+
+    # Add test cases using TestLoader
+    loader = unittest.TestLoader()
+    suite.addTests(loader.loadTestsFromTestCase(TestBase))
+    suite.addTests(loader.loadTestsFromTestCase(TestCards))
+    suite.addTests(loader.loadTestsFromTestCase(TestMedia))
+    suite.addTests(loader.loadTestsFromTestCase(TestInterview))
+
     # Run tests
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
-    
+
     # Return appropriate exit code
     return 0 if result.wasSuccessful() else 1
 
 if __name__ == '__main__':
-    sys.exit(run_tests()) 
+    sys.exit(run_tests())
