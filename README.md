@@ -1,60 +1,130 @@
-# DROE Core App
 
-A Digital Record of Existence (DROE) application for tracking people, places, events, and emotions in your life.
+# Lifestory.ai - Digital Record of Existence (DROE)
 
-## Features
+A modern web application for capturing, organizing, and exploring your life's memories through AI-assisted interviews, timelines, and memory cards.
 
-- **People Management**: Track information about people in your life, including relationships and descriptions.
-- **Place Tracking**: Record and manage locations that are significant to you.
-- **Event Logging**: Document events with details about who was involved and where they occurred.
-- **Emotion Recording**: Track emotions associated with your memories and experiences.
+## Current Tech Stack
 
-## Installation
+### Backend
+- Python 3.12
+- Flask (Web framework)
+- SQLAlchemy (ORM)
+- SQLite (Database)
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/droe-core.git
-   cd droe-core
-   ```
+### Frontend
+- Streamlit (UI Framework)
+- Custom CSS/JavaScript
+- Plotly (Data visualization)
 
-2. Create a virtual environment and activate it:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+### AI/ML Integration
+- Whisper (Audio transcription) - In Progress
+- Custom Prompt Engine
+- Image Generation Capabilities
 
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+## Projected Tech Stack (After Completion)
 
-4. Initialize the database:
-   ```
-   python init_db.py
-   ```
+### Additional Features
+- OpenAI GPT Integration
+- Advanced Image Recognition
+- Natural Language Processing
+- Real-time Audio Processing
+- Advanced Timeline Visualization
+- Memory Graph Database
 
-5. Run the application:
-   ```
-   python app.py
-   ```
+## Current Phase: Alpha Development
 
-6. Open your browser and navigate to `http://127.0.0.1:5000/`
+### Completed Features
+- Basic UI Framework
+- Interview Component
+- Timeline View
+- Card System Architecture
+- Basic Testing Framework
+- Media Upload Functionality
+
+### In Progress
+- Frontend Interview Testing
+- AI Integration
+- Advanced Timeline Features
+- Media Processing Pipeline
+
+## Current Issues
+
+1. Frontend Testing
+   - Interview component tests failing
+   - Session state management needs improvement
+   - Mock integration required for AI components
+
+2. Backend Integration
+   - API endpoint stabilization needed
+   - Database optimization required
+   - Error handling improvements needed
+
+3. UI/UX
+   - Mobile responsiveness improvements needed
+   - Timeline performance optimization
+   - Card view refinements
+
+## Roadmap
+
+### Phase 1 (Current)
+- [x] Basic Framework Setup
+- [x] Core UI Components
+- [ ] Complete Test Coverage
+- [ ] Basic AI Integration
+
+### Phase 2
+- [ ] Advanced AI Features
+- [ ] Enhanced Timeline
+- [ ] Memory Graph
+- [ ] Mobile App Development
+
+### Phase 3
+- [ ] Social Features
+- [ ] Advanced Analytics
+- [ ] API Platform
+- [ ] Enterprise Features
+
+## Development Setup
+
+1. Clone the repository
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+3. Run the application:
+```bash
+python main.py
+```
+
+## Testing
+
+Run tests using:
+```bash
+python -m pytest
+```
 
 ## Project Structure
 
-- `app.py`: Main Flask application file
-- `routes/`: Contains route handlers for different parts of the application
-- `db/`: Database models and connection handling
-- `templates/`: HTML templates for the application
-- `static/`: Static files (CSS, JavaScript, images)
+```
+├── ai/                 # AI/ML components
+├── cards/             # Card system modules
+├── db/                # Database models and utilities
+├── routes/            # API routes and handlers
+├── ui_components/     # Streamlit UI components
+├── utils/             # Helper utilities
+└── tests/             # Test suites
+```
 
-## Technologies Used
+## Contributing
 
-- Flask: Web framework
-- SQLAlchemy: Database ORM
-- Jinja2: Template engine
-- HTML/CSS/JavaScript: Frontend technologies
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+MIT License - See LICENSE file for details
+
+## Authors
+
+ReaL KeeD - Project Lead
