@@ -91,7 +91,11 @@ class TestMedia(TestBase):
         data = response.get_json()
         self.assertIn('error', data)
     
-    def test_generate_image(self):
+    @unittest.mock.patch('ai.image_generator.ImageGenerator.generate_image')
+    def test_generate_image(self, mock_generate):
+        # Mock the image generation to return a fake URL
+        mock_generate.return_value = ('http://fake-image-url.com/test.jpg', None)
+        
         # Test image generation
         response = self.app.post('/media/generate_image',
                                json={'prompt': 'A beautiful sunset',
@@ -101,6 +105,7 @@ class TestMedia(TestBase):
         data = response.get_json()
         self.assertIn('image_url', data)
         self.assertIn('media_id', data)
+        mock_generate.assert_called_once()
     
     def test_generate_image_no_prompt(self):
         # Test image generation without prompt
