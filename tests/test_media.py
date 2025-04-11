@@ -92,10 +92,11 @@ class TestMedia(TestBase):
         data = response.get_json()
         self.assertIn('error', data)
 
-    @unittest.mock.patch('ai.image_generator.openai')
-    def test_generate_image(self, mock_openai):
-        # Mock OpenAI response
-        mock_openai.Image.create.return_value = {'data': [{'url': 'http://fake-image-url.com/test.jpg'}]}
+    @unittest.mock.patch('ai.image_generator.OpenAI')
+    def test_generate_image(self, mock_openai_class):
+        # Mock OpenAI client and response
+        mock_client = mock_openai_class.return_value
+        mock_client.images.generate.return_value.data = [type('obj', (object,), {'url': 'http://fake-image-url.com/test.jpg'})]
 
         # Test image generation
         response = self.app.post('/media/generate_image',
